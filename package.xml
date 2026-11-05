@@ -13,6 +13,8 @@
   <test_depend>ament_cmake_gtest</test_depend>
 
   <depend>eigen</depend>
+
+  <depend>diesel_platform_core</depend>
   
   <export>
     <build_type>ament_cmake</build_type>
