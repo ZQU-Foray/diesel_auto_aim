@@ -36,6 +36,9 @@ class Target {
     /// @param dt 距上次的时间 秒
     void predict(double dt);
 
+    /// 匀速模型的过程噪声强度：平移加速度 (m/s²)²、角加速度 (rad/s²)²。
+    void set_process_noise(double acceleration_variance, double angular_acceleration_variance);
+
     /// @brief 用一次装甲板观测修正
     /// @param xyz_measured 与跟踪状态相同的稳定坐标系下该装甲板的位置 米
     /// @param armor_id 装甲板编号 0-3
@@ -97,6 +100,8 @@ class Target {
     double sigma_lateral_m_ = 0.0;
     double sigma_range_coeff_ = 0.0;
     double plate_random_walk_ = 0.0; ///< r/l/h 随机游走强度 m²/s
+    double acceleration_variance_ = 1.0;
+    double angular_acceleration_variance_ = 1.0;
 
     /// @brief 3x3 位置观测协方差：沿视线(r)与垂直视线(t)两个方向分开给
     Eigen::Matrix3d position_measurement_covariance(const Eigen::Vector3d& xyz_measured) const;

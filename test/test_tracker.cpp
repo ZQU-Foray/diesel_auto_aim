@@ -41,6 +41,25 @@ TEST(Tracker, 类别契约拒绝无目标和其他编号) {
     }
 }
 
+TEST(Tracker, 按类别建轨并跳过未配置的重装) {
+    auto c = config();
+    c.init_profiles[0] = TargetInitProfile{0.17, 4, c.initial_covariance_diag};
+    c.init_profiles[1] = TargetInitProfile{0.17, 4, c.initial_covariance_diag};
+    Tracker sentinel(c);
+    const auto s = sentinel.step({plate(3.83, 0.0, 0)}, 1.0);
+    ASSERT_TRUE(s.target.has_value());
+    EXPECT_NEAR(s.target->xyz.x(), 4.0, 1e-9);
+    EXPECT_NEAR(s.target->r, 0.17, 1e-9);
+    Tracker infantry(c);
+    const auto i = infantry.step({plate(3.83, 0.0, 1)}, 1.0);
+    ASSERT_TRUE(i.target.has_value());
+    EXPECT_NEAR(i.target->xyz.x(), 4.0, 1e-9);
+    Tracker heavy(c);
+    const auto h = heavy.step({plate(3.83, 0.0, 2)}, 1.0);
+    EXPECT_EQ(h.state, TrackerState::Lost);
+    EXPECT_FALSE(h.target.has_value());
+}
+
 TEST(Tracker, 四板关联与短暂丢帧) {
     Tracker tracker(config());
     auto first = tracker.step({plate(4.8, 0.0)}, 1.00);

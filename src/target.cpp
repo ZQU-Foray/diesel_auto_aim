@@ -6,11 +6,6 @@ namespace diesel_auto_aim {
 
 namespace {
 
-// 过程噪声 加速度方差和角加速度方差
-// 位置与角度的过程噪声；角速度不能被几乎冻结，否则原地自转会被误认为中心平移。
-constexpr double v1 = 1.0; // 加速度方差 靶车测试没那么灵活 方差小 sp默认100.0
-constexpr double v2 = 1.0; // 角加速度方差：自转仿真起始值，真实靶车需用日志估计
-
 // 观测噪声 位置误差约 1cm → (0.01)² = 1e-4
 // 现在测试的相机不同 待新相机标定后替换为实测值
 constexpr double kMeasVar = 1e-4;
@@ -43,7 +38,17 @@ Target::Target(const Eigen::Vector3d& xyz0, double a0, double r0,
     // 靶车的装甲板相对 h l 为 0
 }
 
+void Target::set_process_noise(double acceleration_variance, double angular_acceleration_variance) {
+    if (std::isfinite(acceleration_variance) && acceleration_variance > 0.0 &&
+        std::isfinite(angular_acceleration_variance) && angular_acceleration_variance > 0.0) {
+        acceleration_variance_ = acceleration_variance;
+        angular_acceleration_variance_ = angular_acceleration_variance;
+    }
+}
+
 void Target::predict(double dt) {
+    const double v1 = acceleration_variance_;
+    const double v2 = angular_acceleration_variance_;
     // 1 F矩阵
     const double a = dt * dt * dt * dt / 4;
     const double b = dt * dt * dt / 2;

@@ -32,8 +32,18 @@ Tracker::Tracker(TrackerConfig config) : config_(std::move(config)) {
         (config_.radius_upper_m > 0 && config_.radius_upper_m <= config_.radius_lower_m) ||
         (config_.sensor_origin_world && !config_.sensor_origin_world->allFinite()) ||
         !config_.initial_covariance_diag.allFinite() ||
-        (config_.initial_covariance_diag.array() < 0).any()) {
+        (config_.initial_covariance_diag.array() < 0).any() ||
+        !std::isfinite(config_.acceleration_variance) || config_.acceleration_variance <= 0.0 ||
+        !std::isfinite(config_.angular_acceleration_variance) ||
+        config_.angular_acceleration_variance <= 0.0) {
         throw std::invalid_argument("Invalid tracker configuration");
+    }
+    for (const auto& profile : config_.init_profiles) {
+        if (profile &&
+            (!std::isfinite(profile->radius_m) || profile->radius_m <= 0.0 ||
+             profile->armor_count != 4 || !profile->initial_covariance_diag.allFinite() ||
+             (profile->initial_covariance_diag.array() < 0).any()))
+            throw std::invalid_argument("Invalid target initialization profile");
     }
 }
 
@@ -62,6 +72,7 @@ void Tracker::set_position_noise_model(const Eigen::Vector3d& sensor_origin_worl
 }
 
 void Tracker::apply_noise_model(Target& target) const {
+    target.set_process_noise(config_.acceleration_variance, config_.angular_acceleration_variance);
     if (config_.sensor_origin_world)
         target.set_position_noise_model(*config_.sensor_origin_world, config_.sigma_lateral_m,
                                         config_.sigma_range_coeff);
@@ -102,20 +113,29 @@ TrackerResult Tracker::step(const std::vector<ArmorTrackObservation>& observatio
     last_stamp_s_ = stamp_s;
 
     if (!target_) {
+        const bool use_profiles =
+            std::any_of(config_.init_profiles.begin(), config_.init_profiles.end(),
+                        [](const auto& profile) { return profile.has_value(); });
         for (std::size_t i = 0; i < observations.size(); ++i) {
             const auto& observation = observations[i];
             if (!valid(observation))
                 continue;
+            if (use_profiles && !config_.init_profiles[observation.robot_id])
+                continue;
+            const TargetInitProfile fallback{config_.radius_m, config_.armor_count,
+                                             config_.initial_covariance_diag};
+            const TargetInitProfile& profile =
+                use_profiles ? *config_.init_profiles[observation.robot_id] : fallback;
             // 第一块板暂定为局部 id=0；由它的朝向和半径反推车体中心。
-            const Eigen::Vector3d offset(config_.radius_m * std::cos(observation.yaw),
-                                         config_.radius_m * std::sin(observation.yaw), 0.0);
-            target_.emplace(observation.xyz + offset, observation.yaw, config_.radius_m,
-                            config_.initial_covariance_diag, config_.armor_count);
+            const Eigen::Vector3d offset(profile.radius_m * std::cos(observation.yaw),
+                                         profile.radius_m * std::sin(observation.yaw), 0.0);
+            target_.emplace(observation.xyz + offset, observation.yaw, profile.radius_m,
+                            profile.initial_covariance_diag, profile.armor_count);
             apply_noise_model(*target_);
             // 同帧若还能看到另一块"异奇偶"的板，直接解析算出高低差：
             // h = z(奇号板) - z(偶号板)。只靠滤波器等 1/3 号板被选中才更新，
             // 在"每帧只看到一块板"的场景里可能永远等不到（模拟器实测 h 恒为 0）。
-            if (config_.armor_count == 4) {
+            if (profile.armor_count == 4) {
                 for (std::size_t j = 0; j < observations.size(); ++j) {
                     if (j == i)
                         continue;

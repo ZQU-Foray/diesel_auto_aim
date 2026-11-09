@@ -19,6 +19,13 @@ struct ArmorTrackObservation {
 
 enum class AssociationStrategy { ForayGated, SpNearestThree };
 
+/// 按目标类别选择建轨先验；板尺寸属于 PnP 配置，不在这里重复定义。
+struct TargetInitProfile {
+    double radius_m;
+    int armor_count;
+    Eigen::Matrix<double, 11, 1> initial_covariance_diag;
+};
+
 struct TrackerConfig {
     AssociationStrategy association_strategy = AssociationStrategy::ForayGated;
     double radius_m;
@@ -38,6 +45,12 @@ struct TrackerConfig {
     int max_missed_frames;
     double max_frame_gap_s;
     Eigen::Matrix<double, 11, 1> initial_covariance_diag;
+    /// 比赛普通目标采用 SP 的高机动先验；其他场景由调用方按运动日志覆盖。
+    double acceleration_variance = 100.0;
+    double angular_acceleration_variance = 400.0;
+    /// 0 哨兵、1 步兵、2 重装。任一项被设置后，未配置的类别不建轨。
+    /// 全部为空时沿用上面的通用参数，供原有仿真和离线测试使用。
+    std::array<std::optional<TargetInitProfile>, 3> init_profiles{};
 
     /// 位置观测噪声的分方向模型（单目 PnP 深度比横向糊得多）。
     /// sensor_origin_world 为空、或两个 sigma 非正时，退回各向同性 R，即旧行为。

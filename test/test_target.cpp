@@ -211,3 +211,21 @@ TEST(Target, NIS能排除野值影响观测) {
     const Eigen::Vector3d after2 = target.state().xyz;
     EXPECT_GT((after2 - before2).norm(), 1e-6) << "正常观测被误挡了";
 }
+
+TEST(Target, 高机动配置不改变匀速预测位置但会更快接纳角速度变化) {
+    Eigen::Matrix<double, 11, 1> p0 = Eigen::Matrix<double, 11, 1>::Constant(1e-4);
+    Target slow({5.0, 0.0, 0.5}, 0.0, kR, p0, kArmorNum);
+    Target fast({5.0, 0.0, 0.5}, 0.0, kR, p0, kArmorNum);
+    slow.set_process_noise(1.0, 1.0);
+    fast.set_process_noise(100.0, 400.0);
+    slow.predict(0.1);
+    fast.predict(0.1);
+    EXPECT_NEAR(slow.state().a, fast.state().a, 1e-12);
+    EXPECT_NEAR(slow.state().xyz.x(), fast.state().xyz.x(), 1e-12);
+
+    // 突然开始旋转；两者看到同一块板的同一份位置和朝向观测。
+    const auto observed = true_armor_xyz({5.0, 0.0, 0.5}, 0.4, 0);
+    slow.update(observed, 0, 0.4, 0.04);
+    fast.update(observed, 0, 0.4, 0.04);
+    EXPECT_GT(fast.state().w, slow.state().w);
+}
