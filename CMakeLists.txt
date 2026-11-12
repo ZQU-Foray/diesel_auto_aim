@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(foray_auto_aim)
+project(diesel_auto_aim)
 
 set(CMAKE_CXX_STANDARD 17)
 

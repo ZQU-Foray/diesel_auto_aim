@@ -2,9 +2,9 @@
 #include <cmath>
 #include <gtest/gtest.h>
 
-#include "foray_auto_aim/aimer.hpp"
+#include "diesel_auto_aim/aimer.hpp"
 
-using namespace foray_auto_aim;
+using namespace diesel_auto_aim;
 
 namespace {
 constexpr double kBulletSpeed = 25.0; // 步兵哨兵弹速上限 直瞄不用 按接口传入

@@ -1,12 +1,12 @@
-#ifndef FORAY_AUTO_AIM_DETECTOR_HPP
-#define FORAY_AUTO_AIM_DETECTOR_HPP
+#ifndef DIESEL_AUTO_AIM_DETECTOR_HPP
+#define DIESEL_AUTO_AIM_DETECTOR_HPP
 
 #include <cstdint>
 #include <opencv2/core.hpp>
 #include <string>
 #include <vector>
 
-namespace foray_auto_aim {
+namespace diesel_auto_aim {
 
 /// 装甲板规格 决定 PnP 用的真实尺寸
 enum class ArmorType {
@@ -35,6 +35,6 @@ class Detector {
     std::vector<ArmorDetection> detect(const cv::Mat& bgr_img);
 };
 
-} // namespace foray_auto_aim
+} // namespace diesel_auto_aim
 
-#endif // FORAY_AUTO_AIM_DETECTOR_HPP
+#endif // DIESEL_AUTO_AIM_DETECTOR_HPP

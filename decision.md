@@ -36,8 +36,8 @@ Context: 需要让 `colcon` 与组织 CI 识别本仓，并确定源码、参数
 
 Decision:
 - 构建：**ament_cmake**，C++17
-- 目录约定：`include/foray_auto_aim/`（对外头文件）· `src/`（实现）· `config/`（参数 YAML）· `test/`（每模块一个测试）
-- C/C++ 风格沿用 `foray_interfaces` 的 `.clang-format`（4 空格 · LF · UTF-8）
+- 目录约定：`include/diesel_auto_aim/`（对外头文件）· `src/`（实现）· `config/`（参数 YAML）· `test/`（每模块一个测试）
+- C/C++ 风格沿用 `diesel_interfaces` 的 `.clang-format`（4 空格 · LF · UTF-8）
 
 Reason:
 - 组织 `build-ros2` 作业以 `package.xml` 是否存在为开关；缺该文件时构建与测试会被整段跳过
@@ -45,7 +45,7 @@ Reason:
 - 每模块带独立可执行测试是 `repository_structure.md` §9 验收标准 1 的落地方式
 
 Alternatives:
-- 沿用 `foray_interfaces` 的独立可执行测试 + 自定义 CI 作业（不建 ROS 2 包）
+- 沿用 `diesel_interfaces` 的独立可执行测试 + 自定义 CI 作业（不建 ROS 2 包）
 - 单一 `src/` 平铺，不区分 `include/` 与 `src/`
 
 Rejected:

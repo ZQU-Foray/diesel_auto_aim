@@ -3,9 +3,9 @@
 #include <cmath>
 #include <random>
 
-#include "foray_auto_aim/target.hpp"
+#include "diesel_auto_aim/target.hpp"
 
-using namespace foray_auto_aim;
+using namespace diesel_auto_aim;
 
 namespace {
 

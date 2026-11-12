@@ -1,8 +1,8 @@
-#include "foray_auto_aim/aimer.hpp"
+#include "diesel_auto_aim/aimer.hpp"
 
 #include <cmath>
 
-namespace foray_auto_aim {
+namespace diesel_auto_aim {
 
 GimbalCommand aim_at(const Eigen::Vector3d& xyz_in_gimbal, double bullet_speed) {
     (void)bullet_speed; // 激光头测算法 弹道解算后续单独做
@@ -24,4 +24,4 @@ GimbalCommand aim_at(const Eigen::Vector3d& xyz_in_gimbal, double bullet_speed) 
     return command;
 }
 
-} // namespace foray_auto_aim
+} // namespace diesel_auto_aim

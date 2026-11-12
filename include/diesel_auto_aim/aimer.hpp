@@ -1,10 +1,10 @@
-#ifndef FORAY_AUTO_AIM_AIMER_HPP
-#define FORAY_AUTO_AIM_AIMER_HPP
+#ifndef DIESEL_AUTO_AIM_AIMER_HPP
+#define DIESEL_AUTO_AIM_AIMER_HPP
 
-#include "foray_auto_aim/gimbal_command.hpp"
+#include "diesel_auto_aim/gimbal_command.hpp"
 #include <Eigen/Dense>
 
-namespace foray_auto_aim {
+namespace diesel_auto_aim {
 
 /// @brief 由目标在云台系下的位置解算云台指向角 直瞄
 /// @param xyz_in_gimbal 目标位置 云台系 x 前 y 左 z 上 单位米
@@ -12,6 +12,6 @@ namespace foray_auto_aim {
 /// @return 云台角指令 yaw 左正 pitch 下正 单位弧度
 GimbalCommand aim_at(const Eigen::Vector3d& xyz_in_gimbal, double bullet_speed);
 
-} // namespace foray_auto_aim
+} // namespace diesel_auto_aim
 
-#endif // FORAY_AUTO_AIM_AIMER_HPP
+#endif // DIESEL_AUTO_AIM_AIMER_HPP

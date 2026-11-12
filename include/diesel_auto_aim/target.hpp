@@ -1,9 +1,9 @@
-#ifndef FORAY_AUTO_AIM_TARGET_HPP
-#define FORAY_AUTO_AIM_TARGET_HPP
+#ifndef DIESEL_AUTO_AIM_TARGET_HPP
+#define DIESEL_AUTO_AIM_TARGET_HPP
 
 #include <Eigen/Dense>
 
-namespace foray_auto_aim {
+namespace diesel_auto_aim {
 
 /// 整车状态11维度 参考sp
 /// v vx y vy z vz a w r l h
@@ -64,6 +64,6 @@ class Target {
                                             int armor_id) const;
 };
 
-} // namespace foray_auto_aim
+} // namespace diesel_auto_aim
 
 #endif
