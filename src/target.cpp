@@ -145,16 +145,18 @@ void Target::update(const Eigen::Vector3d& xyz_measured) {
     if (armor_id == -1) {
         return;
     }
-    const Eigen::Vector3d xyz_predicted =
-        h_armor_xyz(x_, armor_id); // 用当前状态计算出第armor_id块板子在哪里
-    const Eigen::Matrix<double, 3, 11> H =
-        h_jacobian(x_, armor_id); // 敏感度矩阵 状态改变一点 预测位置会变化多少
-    const Eigen::Vector3d residual = xyz_measured - xyz_predicted; // 观测减去预测
-    const Eigen::Matrix<double, 3, 3> R =
-        Eigen::Matrix<double, 3, 3>::Identity() * kMeasVar; // 观测噪声 重投影误差
-                                                            // NIS
-    const Eigen::Matrix<double, 3, 3> S = H * P_ * H.transpose() + R; // 新息协方差
-    const double nis = residual.transpose() * S.inverse() * residual; // 马氏距离
+    // 用当前状态计算出第armor_id块板子在哪里
+    const Eigen::Vector3d xyz_predicted = h_armor_xyz(x_, armor_id);
+    // 敏感度矩阵：状态改变一点，预测位置会变化多少
+    const Eigen::Matrix<double, 3, 11> H = h_jacobian(x_, armor_id);
+    // 观测减去预测
+    const Eigen::Vector3d residual = xyz_measured - xyz_predicted;
+    // 观测噪声矩阵（重投影误差），用于 NIS
+    const Eigen::Matrix<double, 3, 3> R = Eigen::Matrix<double, 3, 3>::Identity() * kMeasVar;
+    // 新息协方差
+    const Eigen::Matrix<double, 3, 3> S = H * P_ * H.transpose() + R;
+    // 马氏距离
+    const double nis = residual.transpose() * S.inverse() * residual;
     if (nis > kNisThreshold)
         return; // 野值 丢掉这一帧
 
