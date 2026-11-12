@@ -1,4 +1,4 @@
-# foray_auto_aim
+# diesel_auto_aim
 
 > **L4** · owner 角色：视觉
 
@@ -13,9 +13,9 @@
 > 本仓处于**初始化状态**，尚无源码。以下流程随 P0/P1 落地逐步可用。
 
 ```bash
-# 1. 拉取（仓齐备后改为从元仓 foray_ws 一键拉取）
-git clone git@github.com:ZQU-Foray/foray_auto_aim.git
-cd foray_auto_aim
+# 1. 拉取（仓齐备后改为从元仓 diesel_ws 一键拉取）
+git clone git@github.com:ZQU-Foray/diesel_auto_aim.git
+cd diesel_auto_aim
 
 # 2. 依赖安装
 rosdep install -y -r --from-paths . --ignore-src --rosdistro humble
@@ -88,8 +88,8 @@ colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 | 方向 | 对象 |
 |---|---|
-| **上游**（本仓依赖谁） | `foray_interfaces` · `foray_platform` · `foray_localization` · `foray_vision` |
-| **下游**（谁依赖本仓） | `foray_robots` · `foray_ws` |
+| **上游**（本仓依赖谁） | `diesel_interfaces` · `diesel_platform` · `diesel_localization` · `diesel_vision` |
+| **下游**（谁依赖本仓） | `diesel_robots` · `diesel_ws` |
 
 ## 参考
 

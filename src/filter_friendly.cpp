@@ -1,6 +1,6 @@
-#include "foray_auto_aim/target_candidate.hpp"
+#include "diesel_auto_aim/target_candidate.hpp"
 
-namespace foray_auto_aim {
+namespace diesel_auto_aim {
 
 std::vector<TargetCandidate> filter_friendly(const std::vector<TargetCandidate>& candidates) {
     // 只保留 side == Side::Enemy 的项，且保持原顺序
@@ -13,4 +13,4 @@ std::vector<TargetCandidate> filter_friendly(const std::vector<TargetCandidate>&
     return enemycandidates;
 }
 
-} // namespace foray_auto_aim
+} // namespace diesel_auto_aim

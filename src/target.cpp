@@ -1,8 +1,8 @@
-#include "foray_auto_aim/target.hpp"
+#include "diesel_auto_aim/target.hpp"
 
 #include <cmath>
 
-namespace foray_auto_aim {
+namespace diesel_auto_aim {
 
 namespace {
 
@@ -184,4 +184,4 @@ AssociationResult Target::associate(const Eigen::Vector3d& xyz_measured) const {
     return result;
 }
 
-} // namespace foray_auto_aim
+} // namespace diesel_auto_aim

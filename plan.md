@@ -2,7 +2,7 @@
 
 ## 任务列表
 
-- [ ] 接 `foray_vision` 的目标，实现多源目标融合与注入
+- [ ] 接 `diesel_vision` 的目标，实现多源目标融合与注入
 - [ ] 实现友军**过滤**（进入候选集之前）—— 核心函数与 7 条测试已落地，待接入链路
 - [ ] 实现弹道解算与云台伺服（硬实时环，独立线程、禁动态分配）—— 弹道暂不做 直瞄已落地 伺服环待做
 - [x] **整车状态估计 EKF**（11 维，`predict` / `update` / 观测雅可比 `h_jacobian`）—— 2026-10-03 落地
@@ -17,7 +17,7 @@ TARGET_ASSOCIATION_READY
 
 commit hash:   19eb996
 branch:        feat/associate
-modified files: include/foray_auto_aim/target.hpp · src/target.cpp · test/test_target.cpp · tree.md · decision.md · plan.md
+modified files: include/diesel_auto_aim/target.hpp · src/target.cpp · test/test_target.cpp · tree.md · decision.md · plan.md
 risk level:    L1
 
 ## 模糊点与待确认项

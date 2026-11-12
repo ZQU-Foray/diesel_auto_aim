@@ -13,10 +13,10 @@
 ├── package.xml              ROS 2 包定义（ament_cmake）
 ├── CMakeLists.txt           构建与测试目标
 ├── .clang-format            组织 C/C++ 风格（CI 的 lint-c 依据）
-├── .foray-layer             所属层与依赖边界（CI 校验）
+├── .diesel-layer             所属层与依赖边界（CI 校验）
 ├── .gitignore
 ├── include/
-│   └── foray_auto_aim/      对外头文件
+│   └── diesel_auto_aim/      对外头文件
 │       ├── gimbal_command.hpp     云台角指令结构
 │       ├── aimer.hpp              云台角解算接口（直瞄）
 │       ├── target_candidate.hpp   候选目标结构 + 友军过滤接口
