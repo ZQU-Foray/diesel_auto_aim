@@ -109,7 +109,11 @@ AimPipelineResult AimPipeline::process_observations(std::vector<Observation> obs
         result.reason = "vision frame too old for decision";
         return result;
     }
-    const auto q = interpolate_attitude(history, stamp, config_.freshness.max_attitude_gap_s);
+    // 时间偏移只影响"查哪个时刻的姿态" 不影响图像年龄判据
+    const double attitude_stamp = attitude_lookup_s(stamp, config_.freshness);
+    result.attitude_stamp_s = attitude_stamp;
+    const auto q =
+        interpolate_attitude(history, attitude_stamp, config_.freshness.max_attitude_gap_s);
     if (!q) {
         result.stale = StaleReason::AttitudeGap;
         result.reason = "waiting for host-time attitude brackets";

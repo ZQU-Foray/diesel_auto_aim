@@ -24,9 +24,10 @@ struct NativeControlFeedback {
     std::vector<AttitudeSample> history;
     std::string error;
     // 时间门限统计 供回放分析 不代表精度评价
-    std::uint64_t submitted = 0;                ///< submit 调用次数
-    std::uint64_t rejected_clock_backward = 0;  ///< 时间戳回退次数
-    std::uint64_t rejected_stale_goal = 0;      ///< 指令超龄被撤销次数
+    std::uint64_t submitted = 0;               ///< submit 调用次数
+    std::uint64_t rejected_clock_backward = 0; ///< 时间戳回退次数 真异常
+    std::uint64_t command_interruptions = 0;   ///< 控制 active→inactive 次数 真中断
+    std::uint64_t stale_events = 0; ///< 目标过期事件数 逐帧自然发生 仅诊断
     StaleReason last_stale = StaleReason::None; ///< 最近一次被撤销的原因
 };
 
@@ -59,6 +60,7 @@ class NativeControlLoop {
     double frame_stamp_s_ = -1.;
     double rate_deg_s_ = 30.;
     double last_submitted_stamp_s_ = -1.; ///< 判时间戳非单调
+    double command_stamp_s_ = -1.;        ///< 指令生成时刻 指令年龄从这里算
     FreshnessPolicy freshness_;
     std::atomic<bool> stop_{false};
     std::thread thread_;

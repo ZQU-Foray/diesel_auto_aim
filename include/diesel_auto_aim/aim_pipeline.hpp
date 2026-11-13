@@ -51,6 +51,7 @@ struct AimPipelineResult {
     bool valid = false;
     std::string reason;
     StaleReason stale = StaleReason::None; ///< 时间门限的拒绝原因 供回放统计
+    double attitude_stamp_s = 0.0; ///< 实际查姿态用的时刻 便于核对偏移是否生效
     double frame_stamp_s = 0.0;
     WorldAimResult angles;
     std::optional<TrackerResult> tracked;

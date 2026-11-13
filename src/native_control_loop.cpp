@@ -44,12 +44,16 @@ void NativeControlLoop::submit(WorldAimResult goal, double stamp, double rate) {
         feedback_.last_stale = StaleReason::ClockBackward;
         goal_ = WorldAimResult{};
         frame_stamp_s_ = -1.;
+        command_stamp_s_ = -1.;
         rate_deg_s_ = rate;
         return;
     }
     last_submitted_stamp_s_ = stamp;
     goal_ = goal;
     frame_stamp_s_ = stamp;
+    // ⭐ 指令年龄从"命令生成时刻"算 不是从取帧时刻
+    // 取帧到提交之间还有推理耗时(实测~36ms) 若用取帧时刻会把推理时间也算进指令年龄
+    command_stamp_s_ = monotonic_s();
     rate_deg_s_ = rate;
 }
 NativeControlFeedback NativeControlLoop::feedback() const {
@@ -133,14 +137,23 @@ void NativeControlLoop::run() {
             }
             // 指令新鲜度：超龄一次即作废 不靠 validity_hint_ms 兜底
             if (goal_.valid) {
-                const auto stale = classify_age(frame_stamp_s_, now, freshness_.max_command_age_s);
+                // 锁内重新取时刻：submit() 也在锁内写 command_stamp_s_
+                // 若用锁外读到的 now 会比它早几微秒 被误判成时钟回退
+                const double check_now = monotonic_s();
+                const auto stale =
+                    classify_age(command_stamp_s_, check_now, freshness_.max_command_age_s);
                 if (stale != StaleReason::None) {
                     goal_.valid = false;
                     feedback_.last_stale = stale;
-                    if (stale == StaleReason::ClockBackward)
-                        ++feedback_.rejected_clock_backward;
-                    else
-                        ++feedback_.rejected_stale_goal;
+                    // 只在已接管时计入"指令过期"；观察模式每帧提交会逐帧过期
+                    // 若也计数会随帧率线性膨胀 让日志看起来像大量错误
+                    if (feedback_.armed) {
+                        // 时钟回退是真异常；其余只是目标逐帧自然过期 仅作诊断
+                        if (stale == StaleReason::ClockBackward)
+                            ++feedback_.rejected_clock_backward;
+                        else
+                            ++feedback_.stale_events;
+                    }
                 }
             }
             const bool valid_goal = goal_.valid;
@@ -167,6 +180,7 @@ void NativeControlLoop::run() {
                     next_tx = now + .01;
                 }
             } else if (!feedback_.active && was_active) {
+                ++feedback_.command_interruptions; // 真正的控制中断 供可用率统计
                 diesel::platform::link::ControlSnapshot withdraw;
                 withdraw.source = 2;
                 withdraw.mode = 7;
