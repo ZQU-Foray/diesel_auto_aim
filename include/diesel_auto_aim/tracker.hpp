@@ -17,7 +17,7 @@ struct ArmorTrackObservation {
     int robot_id; ///< 目标类别：-1 无目标，0 哨兵，1 步兵，2 重装；不是具体机器人编号
 };
 
-enum class AssociationStrategy { ForayGated, SpNearestThree };
+enum class AssociationStrategy { ForayGated, SpNearestThree, AngularScored };
 
 /// 按目标类别选择建轨先验；板尺寸属于 PnP 配置，不在这里重复定义。
 struct TargetInitProfile {
@@ -87,6 +87,8 @@ struct TrackerConfig {
     /// 深度门限 (m)，<=0 表示只查方位角。前端测距不可信时保持 0：
     /// 拿一个已知有偏的量做门限，只会把正确观测挡掉。
     double association_depth_gate_m = 0.0;
+    /// AngularScored：上一板只获得轻微分数优势，不再一旦过门就直接胜出。
+    double scored_previous_bias_rad = 0.05;
 };
 
 enum class TrackerState { Lost, Detecting, Tracking, TempLost };

@@ -111,6 +111,41 @@ TEST(Tracker, SP关联策略与Foray距离门独立) {
     EXPECT_EQ(result.associated_armor_id, 1);
 }
 
+TEST(Tracker, 角度评分及时切到朝向更合适的邻板) {
+    auto c = config();
+    c.association_strategy = AssociationStrategy::AngularScored;
+    c.sensor_origin_world = Eigen::Vector3d::Zero();
+    c.association_bearing_gate_rad = 0.12;
+    c.association_depth_gate_m = 1.0;
+    Tracker tracker(c);
+    ASSERT_EQ(tracker.step({plate(4.8, 0.0)}, 1.00).associated_armor_id, 0);
+    // 新板已转到接近 90°，上一板仍因 1.2 rad 宽门可能通过，但不能强留旧板。
+    const auto switched = tracker.step({plate(5.0, -0.2, 1, 1.0)}, 1.01);
+    EXPECT_EQ(switched.associated_armor_id, 1);
+    EXPECT_EQ(switched.associated_observation_index, 0);
+}
+
+TEST(Tracker, 角度评分比较全帧并拒绝远处假观测) {
+    auto c = config();
+    c.association_strategy = AssociationStrategy::AngularScored;
+    c.sensor_origin_world = Eigen::Vector3d::Zero();
+    c.association_bearing_gate_rad = 0.12;
+    c.association_depth_gate_m = 1.0;
+    Tracker tracker(c);
+    tracker.step({plate(4.8, 0.0)}, 1.00);
+    const auto chosen =
+        tracker.step({plate(4.8, 0.0, 1, 0.8), plate(5.0, -0.2, 1, M_PI / 2.0)}, 1.01);
+    EXPECT_EQ(chosen.associated_observation_index, 1);
+    EXPECT_EQ(chosen.associated_armor_id, 1);
+
+    Tracker rejects(c);
+    rejects.step({plate(4.8, 0.0)}, 1.00);
+    rejects.step({plate(4.8, 0.0)}, 1.01);
+    const auto bad = rejects.step({plate(10.0, 0.0)}, 1.02);
+    EXPECT_EQ(bad.associated_observation_index, -1);
+    EXPECT_EQ(bad.state, TrackerState::TempLost);
+}
+
 TEST(Tracker, 错误目标和野值不更新状态) {
     Tracker tracker(config());
     tracker.step({plate(4.8, 0.0)}, 1.00);

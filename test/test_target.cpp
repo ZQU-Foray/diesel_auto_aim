@@ -54,7 +54,7 @@ TEST(Target, 静止的目标收敛并且误差小于观测误差) {
         z.z() += noise(gen);
 
         target.predict(kDt); // 更新预测
-        target.update(z);    // 更新观测
+        target.update(z, id);    // 更新观测
 
         sum_meas_err += (z - true_armor_xyz(center, yaw, id))
                             .squaredNorm(); // z是全部加上观测噪声的读数
@@ -99,7 +99,7 @@ TEST(Target, 匀速的目标能估计出速度) {
         z.z() += noise(gen);
 
         target.predict(kDt); // 当前时刻的预测
-        target.update(z);    // 更新当前时刻的滤波后的值
+        target.update(z, id);    // 更新当前时刻的滤波后的值
 
         // 为了观测实验的结果只看后半段落
         if (i < kFrames / 2) {
@@ -144,7 +144,7 @@ TEST(Target, 四块板轮流出现时中心不跳变) {
         z.z() += noise(gen);
 
         target.predict(kDt); // 预测当前的
-        target.update(z);    // 更新滤波数值
+        target.update(z, id);    // 更新滤波数值
         // 前面在收敛 统计稍微后一点的 240 而不是 250是为了多验证一个装甲板
         if (i < 240) {
             continue;
@@ -157,59 +157,31 @@ TEST(Target, 四块板轮流出现时中心不跳变) {
     EXPECT_LT(rmse, 0.02);
 }
 
-TEST(Target, 认板子可以识别出哪一个装甲板加上野值判断) {
+TEST(Target, 预测板位可按编号关联并挡野值) {
     const Eigen::Vector3d center{5.0, 0.0, 0.5};
     const double yaw = 0.0;
     Eigen::Matrix<double, 11, 1> p0_diag{{0.25}, {1.0},  {0.25}, {1.0},  {0.25}, {1.0},
                                          {0.04}, {0.01}, {1e-6}, {1e-6}, {1e-6}};
     Target target(center, yaw, kR, p0_diag, kArmorNum);
+    // 关联已移到 Tracker；Target 至少要能把观测唯一地对回同名板
     for (int id = 0; id < kArmorNum; ++id) {
-        const auto res = target.associate(true_armor_xyz(center, yaw, id));
-        EXPECT_EQ(res.id, id);
+        int best_id = -1;
+        double best = 1e9;
+        for (int j = 0; j < kArmorNum; ++j) {
+            const double d = (target.predicted_armor_xyz(j) - true_armor_xyz(center, yaw, id)).norm();
+            if (d < best) {
+                best = d;
+                best_id = j;
+            }
+        }
+        EXPECT_EQ(best_id, id);
+        EXPECT_LT(best, 1e-6);
     }
-    const auto outlier = target.associate(center + Eigen::Vector3d(3.0, 0.0, 0.0));
-    EXPECT_EQ(outlier.id, -1);
-}
-
-TEST(Target, NIS能排除野值影响观测) {
-    const Eigen::Vector3d center{5.0, 0.0, 0.5};
-    const Eigen::Vector3d v_true{0.0, 1.0, 0.0}; // y方向 1m/s移动
-    const double yaw = 0.0;
-    const int id = 0;
-
-    const Eigen::Vector3d init_guess = center + Eigen::Vector3d(0.2, -0.3, 0.0);
-    // 顺序 x vx y vy z vz a w r l h
-    Eigen::Matrix<double, 11, 1> p0_diag{{0.25}, {1.0},  {0.25}, {1.0},  {0.25}, {1.0},
-                                         {0.04}, {0.01}, {1e-6}, {1e-6}, {1e-6}};
-
-    Target target(init_guess, yaw, kR, p0_diag, kArmorNum);
-
-    std::mt19937 gen(42);
-    std::normal_distribution<double> noise(0.0, kSigma);
-
-    const Eigen::Vector3d z_normal = true_armor_xyz(center, yaw, 0);
-    const Eigen::Vector3d z_outlier = z_normal + Eigen::Vector3d(0.1, 0.0, 0.0); // 野值偏离 0.1 米
-
-    // 先运行一会 让数值收敛
-    // NIS按照协方差来缩放 没有收敛的时候的P很大 s很大 这样马氏距离的对应影响小了
-    for (int i = 0; i < 100; ++i) {
-        target.predict(kDt);
-        target.update(z_normal);
-    }
-
-    // 预测减去观测 这里是野值
-    const Eigen::Vector3d before = target.state().xyz;
-    target.update(z_outlier); // 只调 update（不需要 predict）
-    const Eigen::Vector3d after = target.state().xyz;
-    EXPECT_LT((after - before).norm(), 1e-9) << "野值没被挡住";
-
-    // 正常的观测  误差1cm略有变化
-    const Eigen::Vector3d z_normal2 =
-        true_armor_xyz(center, yaw, 0) + Eigen::Vector3d(0.01, 0.0, 0.0);
-    const Eigen::Vector3d before2 = target.state().xyz;
-    target.update(z_normal2);
-    const Eigen::Vector3d after2 = target.state().xyz;
-    EXPECT_GT((after2 - before2).norm(), 1e-6) << "正常观测被误挡了";
+    const Eigen::Vector3d outlier = center + Eigen::Vector3d(3.0, 0.0, 0.0);
+    double nearest = 1e9;
+    for (int j = 0; j < kArmorNum; ++j)
+        nearest = std::min(nearest, (target.predicted_armor_xyz(j) - outlier).norm());
+    EXPECT_GT(nearest, 0.5); // 与 Tracker 的关联门限同量级
 }
 
 TEST(Target, 高机动配置不改变匀速预测位置但会更快接纳角速度变化) {

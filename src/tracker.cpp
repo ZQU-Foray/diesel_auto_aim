@@ -35,7 +35,14 @@ Tracker::Tracker(TrackerConfig config) : config_(std::move(config)) {
         (config_.initial_covariance_diag.array() < 0).any() ||
         !std::isfinite(config_.acceleration_variance) || config_.acceleration_variance <= 0.0 ||
         !std::isfinite(config_.angular_acceleration_variance) ||
-        config_.angular_acceleration_variance <= 0.0) {
+        config_.angular_acceleration_variance <= 0.0 ||
+        !std::isfinite(config_.scored_previous_bias_rad) ||
+        config_.scored_previous_bias_rad < 0.0 ||
+        (config_.association_strategy == AssociationStrategy::AngularScored &&
+         (!config_.sensor_origin_world || !std::isfinite(config_.association_bearing_gate_rad) ||
+          config_.association_bearing_gate_rad <= 0.0 ||
+          !std::isfinite(config_.association_depth_gate_m) ||
+          config_.association_depth_gate_m <= 0.0))) {
         throw std::invalid_argument("Invalid tracker configuration");
     }
     for (const auto& profile : config_.init_profiles) {
@@ -224,6 +231,45 @@ TrackerResult Tracker::step(const std::vector<ArmorTrackObservation>& observatio
                 break;
             }
         }
+    } else if (config_.association_strategy == AssociationStrategy::AngularScored) {
+        // 同帧全局比较，不按输入顺序挑第一个，也不无条件保留上一块板。
+        // 朝向和方位角负责认板；深度只作粗差保护，不参与精细排名。
+        double best_score = std::numeric_limits<double>::infinity();
+        for (std::size_t i = 0; i < observations.size(); ++i) {
+            const auto& observation = observations[i];
+            if (!valid(observation) || observation.robot_id != robot_id_)
+                continue;
+            for (int id = 0; id < config_.armor_count; ++id) {
+                const double predicted_yaw = base_yaw + id * 2.0 * M_PI / config_.armor_count;
+                const double yaw_error =
+                    std::abs(std::remainder(observation.yaw - predicted_yaw, 2.0 * M_PI));
+                if (yaw_error >= yaw_gate)
+                    continue;
+                const Eigen::Vector3d observed_ray = observation.xyz - *config_.sensor_origin_world;
+                const Eigen::Vector3d predicted_ray =
+                    target_->predicted_armor_xyz(id) - *config_.sensor_origin_world;
+                const double observed_range = observed_ray.norm();
+                const double predicted_range = predicted_ray.norm();
+                if (observed_range < 1e-6 || predicted_range < 1e-6)
+                    continue;
+                const double cosine =
+                    std::clamp(observed_ray.dot(predicted_ray) / (observed_range * predicted_range),
+                               -1.0, 1.0);
+                const double bearing_error = std::acos(cosine);
+                if (bearing_error > config_.association_bearing_gate_rad ||
+                    std::abs(observed_range - predicted_range) > config_.association_depth_gate_m)
+                    continue;
+                const double score =
+                    yaw_error + bearing_error -
+                    (id == last_armor_id_ ? config_.scored_previous_bias_rad : 0.0);
+                if (score < best_score) {
+                    best_score = score;
+                    best = &observation;
+                    best_id = id;
+                    best_index = static_cast<int>(i);
+                }
+            }
+        }
     } else {
         // 先检查上一帧锁定的板。只要它仍在门限内，就不因另一块板偶然更靠近而跳板。
         for (std::size_t i = 0; i < observations.size(); ++i) {
@@ -296,7 +342,9 @@ TrackerResult Tracker::step(const std::vector<ArmorTrackObservation>& observatio
         const Eigen::Vector3d center_before_secondary = target_->state().xyz;
         // 同帧其余板做"弱更新"：只有不同板参与，r/l/h 才可观测。
         // 只用一块板时会退化成"单车心与半径的简并"，半径永远学不动。
-        if (config_.secondary_plate_noise_scale > 0.0) {
+        // 角度评分的同帧多板分配留到第 5 步决定；此处不混用旧的位置匹配做弱更新。
+        if (config_.secondary_plate_noise_scale > 0.0 &&
+            config_.association_strategy != AssociationStrategy::AngularScored) {
             std::array<bool, 4> used{};
             used[static_cast<std::size_t>(best_id)] = true;
             for (std::size_t i = 0; i < observations.size(); ++i) {
