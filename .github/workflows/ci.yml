@@ -79,9 +79,17 @@ jobs:
             echo "未发现 C/C++ 代码，跳过。"
           fi
 
+      # 固定 clang-format 版本：ubuntu-latest 的 apt 版本会随镜像漂移（曾从 14 漂到 21），
+      # 同一份代码在不同镜像上判不一致，格式检查会变成噪声。本地用同一版本：
+      #   pip install clang-format==18.1.8
       - name: Install clang-format
         if: steps.detect.outputs.found == 'true'
-        run: sudo apt-get install -y clang-format
+        shell: bash
+        run: |
+          python3 -m pip install --quiet --break-system-packages clang-format==18.1.8
+          CF=$(python3 -c "import clang_format, pathlib; print(pathlib.Path(clang_format.__file__).parent / 'data' / 'bin' / 'clang-format')")
+          echo "CLANG_FORMAT=$CF" >> "$GITHUB_ENV"
+          "$CF" --version
 
       - name: Format check
         if: steps.detect.outputs.found == 'true'
@@ -89,7 +97,7 @@ jobs:
         run: |
           find . \( -name '*.c' -o -name '*.h' -o -name '*.cpp' -o -name '*.hpp' \) \
             -not -path './.git/*' -print0 | \
-            xargs -0 -r clang-format --dry-run --Werror
+            xargs -0 -r "$CLANG_FORMAT" --dry-run --Werror
 
   # ---- Python 测试 ----
   test-python:
@@ -129,7 +137,7 @@ jobs:
         run: pytest -v
 
   # ---- ROS 2 构建与测试 ----
-  # 适用于 colcon 工作空间仓库（如 foray_navigation）。
+  # 适用于 colcon 工作空间仓库（如 diesel_navigation）。
   # 仓库内不存在 package.xml 时整个作业自动跳过，故可安全保留在通用模板里。
   build-ros2:
     runs-on: ubuntu-22.04
@@ -154,7 +162,30 @@ jobs:
         run: |
           apt-get update
           rosdep update
-          rosdep install -y -r --from-paths . --ignore-src --rosdistro humble
+          # diesel_platform_core 不在 rosdep 索引里，由下一步从上游仓构建
+          rosdep install -y -r --from-paths . --ignore-src --rosdistro humble \
+            --skip-keys diesel_platform_core
+
+      # 本仓只依赖 diesel_platform_core 一个上游 ROS 2 包；CI 单仓 checkout 拿不到它，
+      # 故从公开的 diesel_platform 仓按需构建该子包，再把安装前缀交给后续步骤的 find_package。
+      - name: 准备上游 diesel_platform_core
+        if: steps.detect.outputs.found == 'true'
+        shell: bash
+        run: |
+          source /opt/ros/humble/setup.bash
+          # 默认分支只有文档，平台子包在 dev 上
+          git clone --depth 1 --branch dev https://github.com/ZQU-Foray/diesel_platform.git /tmp/diesel_platform
+          colcon build --base-paths /tmp/diesel_platform \
+            --packages-select diesel_platform_core \
+            --build-base /tmp/diesel_platform/build \
+            --install-base /tmp/diesel_platform/install \
+            --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+          # colcon 的隔离布局是 install/<pkg>，前缀要指到子包目录
+          PLAT_PREFIX=/tmp/diesel_platform/install/diesel_platform_core
+          test -f "$PLAT_PREFIX/lib/cmake/diesel_platform_core/diesel_platform_coreConfig.cmake"
+          # 后续步骤是独立 shell，sourcing 不会继承；用 env 把前缀传给 CMake 与动态链接器
+          echo "CMAKE_PREFIX_PATH=$PLAT_PREFIX${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$PLAT_PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
 
       - name: 构建 (colcon build)
         if: steps.detect.outputs.found == 'true'

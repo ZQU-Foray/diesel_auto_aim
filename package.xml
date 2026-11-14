@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>diesel_vision_backend</name>
+  <version>0.0.1</version>
+  <description>Foray 自瞄（哨兵/步兵/英雄共用）：多源目标融合与注入 · 友军过滤 · 弹道解算与云台伺服</description>
+
+  <maintainer email="295817059@qq.com">谢佳平</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+
+  <depend>eigen</depend>
+
+  <depend>diesel_platform_core</depend>
+  
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
