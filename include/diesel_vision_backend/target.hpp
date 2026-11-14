@@ -5,7 +5,7 @@
 
 #include <optional>
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 
 /// 整车状态11维度 参考sp
 /// v vx y vy z vz a w r l h
@@ -113,6 +113,6 @@ class Target {
                                             int armor_id) const;
 };
 
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend
 
 #endif

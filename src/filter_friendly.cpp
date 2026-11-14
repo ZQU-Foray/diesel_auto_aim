@@ -1,6 +1,6 @@
-#include "diesel_auto_aim/target_candidate.hpp"
+#include "diesel_vision_backend/target_candidate.hpp"
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 
 std::vector<TargetCandidate> filter_friendly(const std::vector<TargetCandidate>& candidates) {
     // 只保留 side == Side::Enemy 的项，且保持原顺序
@@ -13,4 +13,4 @@ std::vector<TargetCandidate> filter_friendly(const std::vector<TargetCandidate>&
     return enemycandidates;
 }
 
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend

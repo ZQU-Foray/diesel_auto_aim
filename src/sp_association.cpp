@@ -1,11 +1,11 @@
-#include "diesel_auto_aim/sp_association.hpp"
+#include "diesel_vision_backend/sp_association.hpp"
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <limits>
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 
 std::optional<SpAssociation> associate_sp_plate(const Target& target,
                                                 const ArmorTrackObservation& observation,
@@ -54,4 +54,4 @@ std::optional<SpAssociation> associate_sp_plate(const Target& target,
     return best;
 }
 
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend

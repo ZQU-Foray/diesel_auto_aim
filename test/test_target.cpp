@@ -3,9 +3,9 @@
 #include <cmath>
 #include <random>
 
-#include "diesel_auto_aim/target.hpp"
+#include "diesel_vision_backend/target.hpp"
 
-using namespace diesel_auto_aim;
+using namespace diesel_vision_backend;
 
 namespace {
 

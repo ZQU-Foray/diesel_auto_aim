@@ -1,17 +1,17 @@
-#ifndef DIESEL_AUTO_AIM_AIM_PIPELINE_HPP
-#define DIESEL_AUTO_AIM_AIM_PIPELINE_HPP
+#ifndef DIESEL_VISION_BACKEND_AIM_PIPELINE_HPP
+#define DIESEL_VISION_BACKEND_AIM_PIPELINE_HPP
 
 #include <Eigen/Geometry>
 #include <optional>
 #include <string>
 #include <vector>
 
-#include "diesel_auto_aim/freshness_policy.hpp"
-#include "diesel_auto_aim/observation.hpp"
-#include "diesel_auto_aim/tracker.hpp"
-#include "diesel_auto_aim/world_aim_solver.hpp"
+#include "diesel_vision_backend/freshness_policy.hpp"
+#include "diesel_vision_backend/observation.hpp"
+#include "diesel_vision_backend/tracker.hpp"
+#include "diesel_vision_backend/world_aim_solver.hpp"
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 
 // 候选手眼外参 相机点乘R再加t得到云台点 只在这里转换一次
 // 标定文件由装配入口读取（读文件属前端/装配职责），本仓只接收结果。
@@ -84,5 +84,5 @@ class AimPipeline {
 WorldAimResult advance_world_aim(const WorldAimResult& goal, const WorldAimResult& previous,
                                  double dt_s, double rate_deg_s);
 
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend
 #endif

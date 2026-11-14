@@ -1,5 +1,5 @@
 #include "diesel/platform/link/robolink_frame_parser.hpp"
-#include "diesel_auto_aim/native_control_loop.hpp"
+#include "diesel_vision_backend/native_control_loop.hpp"
 #include <chrono>
 #include <cstring>
 #include <fcntl.h>
@@ -8,7 +8,7 @@
 #include <thread>
 #include <unistd.h>
 
-using namespace diesel_auto_aim;
+using namespace diesel_vision_backend;
 using namespace diesel::platform::link;
 namespace {
 double now_s() {

@@ -1,8 +1,8 @@
-#include "diesel_auto_aim/target.hpp"
+#include "diesel_vision_backend/target.hpp"
 
 #include <cmath>
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 
 namespace {
 
@@ -252,4 +252,4 @@ bool Target::radius_in_range(double lower_m, double upper_m) const {
            alternate > lower_m && alternate < upper_m;
 }
 
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend

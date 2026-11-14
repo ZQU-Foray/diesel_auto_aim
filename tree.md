@@ -16,7 +16,7 @@
 ├── .diesel-layer            所属层与依赖边界（CI 校验）
 ├── .gitignore
 ├── include/
-│   └── diesel_auto_aim/      对外头文件
+│   └── diesel_vision_backend/     对外头文件
 │       ├── gimbal_command.hpp     云台角指令结构
 │       ├── control_frame_adapter.hpp  云台相对角与 IMU 姿态到世界系控制帧的离线适配接口
 │       ├── aimer.hpp              云台角解算接口（直瞄）

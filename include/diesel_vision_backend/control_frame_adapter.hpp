@@ -1,18 +1,18 @@
-#ifndef DIESEL_AUTO_AIM_CONTROL_FRAME_ADAPTER_HPP
-#define DIESEL_AUTO_AIM_CONTROL_FRAME_ADAPTER_HPP
+#ifndef DIESEL_VISION_BACKEND_CONTROL_FRAME_ADAPTER_HPP
+#define DIESEL_VISION_BACKEND_CONTROL_FRAME_ADAPTER_HPP
 
 #include <cstdint>
 #include <optional>
 #include <vector>
 
-#include "diesel_auto_aim/gimbal_command.hpp"
+#include "diesel_vision_backend/gimbal_command.hpp"
 
 namespace diesel::platform::link {
 class RoboLinkHostLink;
 struct GimbalAttitude;
 } // namespace diesel::platform::link
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 
 // 将云台系相对指向角按当前姿态转换为世界系目标角后组帧；姿态无效则拒绝。
 // 本接口不做图像与姿态的时间对齐，调用方必须提供同一时刻的姿态。
@@ -29,6 +29,6 @@ bool queue_gimbal_command(diesel::platform::link::RoboLinkHostLink& link,
                           const diesel::platform::link::GimbalAttitude& attitude,
                           std::uint64_t now_ms);
 
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend
 
 #endif

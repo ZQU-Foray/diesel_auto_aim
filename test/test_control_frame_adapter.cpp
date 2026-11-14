@@ -10,8 +10,8 @@
 
 #include "diesel/platform/link/robolink_codec.hpp"
 #include "diesel/platform/link/robolink_host_link.hpp"
-#include "diesel_auto_aim/aimer.hpp"
-#include "diesel_auto_aim/control_frame_adapter.hpp"
+#include "diesel_vision_backend/aimer.hpp"
+#include "diesel_vision_backend/control_frame_adapter.hpp"
 
 namespace {
 
@@ -36,10 +36,10 @@ diesel::platform::link::GimbalAttitude ready_attitude() {
 } // namespace
 
 TEST(ControlFrameAdapter, EncodesValidGimbalCommandWithoutFire) {
-    const diesel_auto_aim::GimbalCommand command{3.14159265358979323846 / 2.0,
-                                                 -3.14159265358979323846 / 4.0, true};
+    const diesel_vision_backend::GimbalCommand command{3.14159265358979323846 / 2.0,
+                                                       -3.14159265358979323846 / 4.0, true};
     const auto frame =
-        diesel_auto_aim::make_gimbal_control_frame(command, ready_attitude(), 21, 3, 4, 1000);
+        diesel_vision_backend::make_gimbal_control_frame(command, ready_attitude(), 21, 3, 4, 1000);
     ASSERT_TRUE(frame.has_value());
     const auto slot = diesel::platform::link::decode_single_slot_frame(*frame);
     ASSERT_TRUE(slot.has_value());
@@ -58,17 +58,17 @@ TEST(ControlFrameAdapter, EncodesValidGimbalCommandWithoutFire) {
 }
 
 TEST(ControlFrameAdapter, RejectsUntrustedAndNonFiniteCommand) {
-    const auto invalid =
-        diesel_auto_aim::make_gimbal_control_frame({1.0, 2.0, false}, ready_attitude(), 1, 1, 1, 1);
+    const auto invalid = diesel_vision_backend::make_gimbal_control_frame(
+        {1.0, 2.0, false}, ready_attitude(), 1, 1, 1, 1);
     EXPECT_FALSE(invalid.has_value());
-    const auto nonfinite = diesel_auto_aim::make_gimbal_control_frame(
+    const auto nonfinite = diesel_vision_backend::make_gimbal_control_frame(
         {std::numeric_limits<double>::quiet_NaN(), 0.0, true}, ready_attitude(), 1, 1, 1, 1);
     EXPECT_FALSE(nonfinite.has_value());
 
     auto unavailable = ready_attitude();
     unavailable.attitude_valid = false;
     EXPECT_FALSE(
-        diesel_auto_aim::make_gimbal_control_frame({0.0, 0.0, true}, unavailable, 1, 1, 1, 1)
+        diesel_vision_backend::make_gimbal_control_frame({0.0, 0.0, true}, unavailable, 1, 1, 1, 1)
             .has_value());
 }
 
@@ -77,7 +77,7 @@ TEST(ControlFrameAdapter, RotatesGimbalDirectionIntoWorldFrame) {
     // 云台相对世界绕 +z 转 90°；云台正前方在世界系中指向 +y。
     attitude.quaternion_wxyz = {0.70710677f, 0.0f, 0.0f, 0.70710677f};
     const auto frame =
-        diesel_auto_aim::make_gimbal_control_frame({0.0, 0.0, true}, attitude, 1, 1, 1, 1);
+        diesel_vision_backend::make_gimbal_control_frame({0.0, 0.0, true}, attitude, 1, 1, 1, 1);
     ASSERT_TRUE(frame.has_value());
     const auto slot = diesel::platform::link::decode_single_slot_frame(*frame);
     ASSERT_TRUE(slot.has_value());
@@ -86,7 +86,7 @@ TEST(ControlFrameAdapter, RotatesGimbalDirectionIntoWorldFrame) {
     EXPECT_NEAR(read_float_le(slot->payload, 24), 0.0f, 1e-5f);
 
     // 同一静止世界方向 +x：云台左转 90° 后，相对目标变成右侧 90°。
-    const auto stationary = diesel_auto_aim::make_gimbal_control_frame(
+    const auto stationary = diesel_vision_backend::make_gimbal_control_frame(
         {-3.14159265358979323846 / 2.0, 0.0, true}, attitude, 2, 2, 2, 2);
     ASSERT_TRUE(stationary.has_value());
     const auto stationary_slot = diesel::platform::link::decode_single_slot_frame(*stationary);
@@ -94,8 +94,9 @@ TEST(ControlFrameAdapter, RotatesGimbalDirectionIntoWorldFrame) {
     EXPECT_NEAR(read_float_le(stationary_slot->payload, 20), 0.0f, 1e-5f);
 
     attitude.imu_state = 0; // IMU 仍在标定，世界系目标不能用。
-    EXPECT_FALSE(diesel_auto_aim::make_gimbal_control_frame({0.0, 0.0, true}, attitude, 3, 3, 3, 3)
-                     .has_value());
+    EXPECT_FALSE(
+        diesel_vision_backend::make_gimbal_control_frame({0.0, 0.0, true}, attitude, 3, 3, 3, 3)
+            .has_value());
 }
 
 TEST(ControlFrameAdapter, WorldPitchUsesDownPositiveConvention) {
@@ -103,7 +104,7 @@ TEST(ControlFrameAdapter, WorldPitchUsesDownPositiveConvention) {
     // 绕世界 +y 旋转 30°，云台正前方转向世界 -z，即目标 pitch 下正。
     attitude.quaternion_wxyz = {0.9659258f, 0.0f, 0.2588190f, 0.0f};
     const auto frame =
-        diesel_auto_aim::make_gimbal_control_frame({0.0, 0.0, true}, attitude, 1, 1, 1, 1);
+        diesel_vision_backend::make_gimbal_control_frame({0.0, 0.0, true}, attitude, 1, 1, 1, 1);
     ASSERT_TRUE(frame.has_value());
     const auto slot = diesel::platform::link::decode_single_slot_frame(*frame);
     ASSERT_TRUE(slot.has_value());
@@ -114,9 +115,9 @@ TEST(ControlFrameAdapter, WorldPitchUsesDownPositiveConvention) {
 
 TEST(ControlFrameAdapter, AimResultCanEnterProtocolFrame) {
     // 用真实直瞄函数产生指令，验证自瞄输出确实能进入协议组帧入口。
-    const auto command = diesel_auto_aim::aim_at({1.0, 1.0, 0.0}, 0.0);
+    const auto command = diesel_vision_backend::aim_at({1.0, 1.0, 0.0}, 0.0);
     const auto frame =
-        diesel_auto_aim::make_gimbal_control_frame(command, ready_attitude(), 5, 6, 7, 8);
+        diesel_vision_backend::make_gimbal_control_frame(command, ready_attitude(), 5, 6, 7, 8);
     ASSERT_TRUE(frame.has_value());
     const auto slot = diesel::platform::link::decode_single_slot_frame(*frame);
     ASSERT_TRUE(slot.has_value());
@@ -128,7 +129,7 @@ TEST(ControlFrameAdapter, RefusesToQueueBeforeHandshake) {
     diesel::platform::link::UsbCdcPort port("/dev/diesel_not_connected");
     diesel::platform::link::RoboLinkHostLink link(port);
     EXPECT_FALSE(
-        diesel_auto_aim::queue_gimbal_command(link, {0.0, 0.0, true}, ready_attitude(), 1));
+        diesel_vision_backend::queue_gimbal_command(link, {0.0, 0.0, true}, ready_attitude(), 1));
 }
 
 TEST(ControlFrameAdapter, AimToUsbBytesAfterHandshake) {
@@ -169,8 +170,8 @@ TEST(ControlFrameAdapter, AimToUsbBytesAfterHandshake) {
               static_cast<ssize_t>(status_frame.size()));
     ASSERT_EQ(link.step(2), diesel::platform::link::HostLinkState::Active);
 
-    const auto command = diesel_auto_aim::aim_at({1.0, 1.0, 0.0}, 0.0);
-    ASSERT_TRUE(diesel_auto_aim::queue_gimbal_command(link, command, ready_attitude(), 3));
+    const auto command = diesel_vision_backend::aim_at({1.0, 1.0, 0.0}, 0.0);
+    ASSERT_TRUE(diesel_vision_backend::queue_gimbal_command(link, command, ready_attitude(), 3));
     ASSERT_EQ(link.step(3), diesel::platform::link::HostLinkState::Active);
     const ssize_t sent_size = ::read(master, bytes.data(), bytes.size());
     ASSERT_EQ(sent_size, 72);

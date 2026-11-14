@@ -4,9 +4,9 @@
 #include <cmath>
 #include <limits>
 
-#include "diesel_auto_aim/tracker.hpp"
+#include "diesel_vision_backend/tracker.hpp"
 
-using namespace diesel_auto_aim;
+using namespace diesel_vision_backend;
 
 namespace {
 

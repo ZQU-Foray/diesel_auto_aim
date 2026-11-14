@@ -3,14 +3,14 @@
 
 #include "diesel/platform/link/robolink_host_link.hpp"
 #include "diesel/platform/link/usb_cdc_port.hpp"
-#include "diesel_auto_aim/aim_pipeline.hpp"
-#include "diesel_auto_aim/freshness_policy.hpp"
+#include "diesel_vision_backend/aim_pipeline.hpp"
+#include "diesel_vision_backend/freshness_policy.hpp"
 #include <atomic>
 #include <deque>
 #include <mutex>
 #include <thread>
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 
 struct NativeControlFeedback {
     bool ready = false;
@@ -67,5 +67,5 @@ class NativeControlLoop {
     std::thread thread_;
 };
 
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend
 #endif

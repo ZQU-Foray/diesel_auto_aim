@@ -1,10 +1,11 @@
-# diesel_auto_aim
+# diesel_vision_backend
 
 > **L4** · owner 角色：视觉
 
-自瞄（哨兵/步兵/英雄共用）· 多源目标注入
+视觉后端：多源融合 · 跟踪 · 瞄准解算（哨兵/步兵/英雄共用）
 
-消费融合后的目标，**不关心来源**。跟踪环是硬实时。
+消费前端逐帧 `Observation` 与队友共享目标，**不关心来源**。跟踪环是硬实时。
+检测识别、PnP 与相机调试归 `diesel_vision_frontend`，本仓不链接 OpenCV / ONNX Runtime。
 
 ---
 
@@ -14,8 +15,8 @@
 
 ```bash
 # 1. 拉取（仓齐备后改为从元仓 diesel_ws 一键拉取）
-git clone git@github.com:ZQU-Foray/diesel_auto_aim.git
-cd diesel_auto_aim
+git clone git@github.com:ZQU-Foray/diesel_vision_backend.git
+cd diesel_vision_backend
 
 # 2. 依赖安装
 rosdep install -y -r --from-paths . --ignore-src --rosdistro humble
@@ -115,7 +116,7 @@ colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 | 方向 | 对象 |
 |---|---|
-| **上游**（本仓依赖谁） | `diesel_interfaces` · `diesel_platform` · `diesel_localization` · `diesel_vision` |
+| **上游**（本仓依赖谁） | `diesel_interfaces` · `diesel_platform` · `diesel_localization` · `diesel_vision_frontend` |
 | **下游**（谁依赖本仓） | `diesel_robots` · `diesel_ws` |
 
 ## 参考

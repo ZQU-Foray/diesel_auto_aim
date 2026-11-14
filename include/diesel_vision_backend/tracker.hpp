@@ -6,9 +6,9 @@
 #include <optional>
 #include <vector>
 
-#include "diesel_auto_aim/target.hpp"
+#include "diesel_vision_backend/target.hpp"
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 
 /// 每块板的三维观测。xyz 与 yaw 必须在同一个稳定坐标系，不能直接传随云台旋转的坐标。
 struct ArmorTrackObservation {
@@ -179,6 +179,6 @@ class Tracker {
     AssociationDiagnostics diagnostics_;
 };
 
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend
 
 #endif // FORAY_AUTO_AIM_TRACKER_HPP

@@ -1,5 +1,5 @@
-#include "diesel_auto_aim/tracker.hpp"
-#include "diesel_auto_aim/sp_association.hpp"
+#include "diesel_vision_backend/tracker.hpp"
+#include "diesel_vision_backend/sp_association.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 
 Tracker::Tracker(TrackerConfig config) : config_(std::move(config)) {
     if (!std::isfinite(config_.radius_m) || config_.radius_m <= 0 || config_.armor_count != 4 ||
@@ -522,4 +522,4 @@ std::optional<std::array<Eigen::Vector3d, 4>> Tracker::predicted_armors() const 
     return positions;
 }
 
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend

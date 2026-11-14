@@ -186,7 +186,7 @@ Context: 需要让 `colcon` 与组织 CI 识别本仓，并确定源码、参数
 
 Decision:
 - 构建：**ament_cmake**，C++17
-- 目录约定：`include/diesel_auto_aim/`（对外头文件）· `src/`（实现）· `config/`（参数 YAML）· `test/`（每模块一个测试）
+- 目录约定：`include/diesel_vision_backend/`（对外头文件）· `src/`（实现）· `config/`（参数 YAML）· `test/`（每模块一个测试）
 - C/C++ 风格沿用 `diesel_interfaces` 的 `.clang-format`（4 空格 · LF · UTF-8）
 
 Reason:
@@ -444,3 +444,23 @@ Rejected:
 
 Source: `foray_docs/repository_structure.md` §2、§6.6；`algorithm_structure.md` §1.4/§1.5；
 迁移计划 P0–P6（dev_task `vision-front-backend-split`）。
+
+---
+
+## Decision
+
+Date: 2026-11-14
+
+Context: I4 —— 仓名与包名从 `diesel_auto_aim` 改为 `diesel_vision_backend`，与「前端检测 / 后端融合跟踪」的分家边界对齐。
+
+Decision:
+- GitHub 仓库原地改名 `diesel_auto_aim` → `diesel_vision_backend`（平台自动重定向旧 URL），本地目录与 `origin` 同步改名。
+- ROS 包名、CMake `project()`、`ament_export_dependencies`、`include/` 目录与 `#include` 路径、`namespace`、头文件 guard（`DIESEL_VISION_BACKEND_*`）一并改为新名。
+- 目录约定改为 `include/diesel_vision_backend/`；`README.md` 定位改为「视觉后端：多源融合 · 跟踪 · 瞄准解算」，依赖表上游写 `diesel_vision_frontend`。
+- PR #8 先合入 `dev`，再执行改名；改名后本仓 `dev` 上的 2026-11-14 边界决策记录随改名提交一起推送。
+
+Reason: 仓名要和职责一致——本仓已不含任何检测代码，继续叫 auto_aim 会让上游文档、`.repos` 与新人理解都指向错误边界；原地改名保留提交历史、PR 与权限，和上次 `foray_*` → `diesel_*` 的做法一致。
+
+Source: 迁移计划 I4（dev_task `vision-front-backend-split`）；PR #8（merge commit `96d794e`）。
+
+Rejected: 新建 `diesel_vision_backend` 仓并搬代码（丢历史、丢 PR、要重配 CI 与权限）；只改 README 不改包名（`find_package` 与 `include` 路径仍指旧名）。

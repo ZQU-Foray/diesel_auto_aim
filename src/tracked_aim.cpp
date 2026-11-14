@@ -1,12 +1,12 @@
-#include "diesel_auto_aim/tracked_aim.hpp"
+#include "diesel_vision_backend/tracked_aim.hpp"
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 
-#include "diesel_auto_aim/aimer.hpp"
+#include "diesel_vision_backend/aimer.hpp"
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 
 Eigen::Vector3d predict_tracked_armor(const TargetState& state, int armor_id, double dt_s) {
     if (armor_id < 0 || armor_id >= 4 || !std::isfinite(dt_s) || dt_s < 0.0 || dt_s > 1.0 ||
@@ -88,4 +88,4 @@ AimSelection select_aim_armor(const TargetState& state, const Eigen::Vector3d& g
     return selection;
 }
 
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend

@@ -3,10 +3,10 @@
 
 #include <Eigen/Geometry>
 
-#include "diesel_auto_aim/gimbal_command.hpp"
-#include "diesel_auto_aim/target.hpp"
+#include "diesel_vision_backend/gimbal_command.hpp"
+#include "diesel_vision_backend/target.hpp"
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 
 /// 离线/仿真用：由整车估计预测一块板在稳定坐标系中的未来位置。
 /// armor_id 是 Tracker 的局部板号，不是机器人编号；dt_s 从观测时刻向前预测。
@@ -42,6 +42,6 @@ AimSelection select_aim_armor(const TargetState& state, const Eigen::Vector3d& g
                               double facing_gate_rad = 60.0 * M_PI / 180.0,
                               double hysteresis = 0.10);
 
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend
 
 #endif // FORAY_AUTO_AIM_TRACKED_AIM_HPP

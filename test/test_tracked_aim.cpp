@@ -2,9 +2,9 @@
 
 #include <gtest/gtest.h>
 
-#include "diesel_auto_aim/tracked_aim.hpp"
+#include "diesel_vision_backend/tracked_aim.hpp"
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 namespace {
 
 TargetState fixture() {
@@ -102,4 +102,4 @@ TEST(TrackedAim, KeepsPreviousBoardWhenFacingsAreClose) {
 }
 
 } // namespace
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend
