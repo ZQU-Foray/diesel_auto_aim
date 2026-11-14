@@ -167,7 +167,7 @@ jobs:
             --skip-keys diesel_platform_core
 
       # 本仓只依赖 diesel_platform_core 一个上游 ROS 2 包；CI 单仓 checkout 拿不到它，
-      # 故从公开的 diesel_platform 仓按需构建该子包并装进 /usr/local，供 find_package 解析。
+      # 故从公开的 diesel_platform 仓按需构建该子包，再把安装前缀交给后续步骤的 find_package。
       - name: 准备上游 diesel_platform_core
         if: steps.detect.outputs.found == 'true'
         shell: bash
@@ -179,9 +179,13 @@ jobs:
             --packages-select diesel_platform_core \
             --build-base /tmp/diesel_platform/build \
             --install-base /tmp/diesel_platform/install \
-            --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF \
-                         -DCMAKE_INSTALL_PREFIX=/usr/local
-          ldconfig
+            --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+          # colcon 的隔离布局是 install/<pkg>，前缀要指到子包目录
+          PLAT_PREFIX=/tmp/diesel_platform/install/diesel_platform_core
+          test -f "$PLAT_PREFIX/lib/cmake/diesel_platform_core/diesel_platform_coreConfig.cmake"
+          # 后续步骤是独立 shell，sourcing 不会继承；用 env 把前缀传给 CMake 与动态链接器
+          echo "CMAKE_PREFIX_PATH=$PLAT_PREFIX${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$PLAT_PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" >> "$GITHUB_ENV"
 
       - name: 构建 (colcon build)
         if: steps.detect.outputs.found == 'true'
