@@ -1,4 +1,4 @@
-#include "diesel_auto_aim/control_frame_adapter.hpp"
+#include "diesel_vision_backend/control_frame_adapter.hpp"
 
 #include <cmath>
 #include <limits>
@@ -8,7 +8,7 @@
 #include "diesel/platform/link/robolink_codec.hpp"
 #include "diesel/platform/link/robolink_host_link.hpp"
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 namespace {
 
 std::optional<diesel::platform::link::ControlSnapshot>
@@ -82,4 +82,4 @@ bool queue_gimbal_command(diesel::platform::link::RoboLinkHostLink& link,
     return snapshot && link.queue_control(*snapshot, now_ms);
 }
 
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend

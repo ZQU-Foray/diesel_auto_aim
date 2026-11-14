@@ -1,6 +1,6 @@
 // 时间门限的边界行为：非有限、回退、超龄、插值窗口
-#include "diesel_auto_aim/aim_pipeline.hpp"
-#include "diesel_auto_aim/freshness_policy.hpp"
+#include "diesel_vision_backend/aim_pipeline.hpp"
+#include "diesel_vision_backend/freshness_policy.hpp"
 
 #include <gtest/gtest.h>
 
@@ -10,13 +10,13 @@
 
 namespace {
 
-using diesel_auto_aim::attitude_lookup_s;
-using diesel_auto_aim::AttitudeSample;
-using diesel_auto_aim::classify_age;
-using diesel_auto_aim::FreshnessPolicy;
-using diesel_auto_aim::interpolate_attitude;
-using diesel_auto_aim::StaleReason;
-using diesel_auto_aim::valid_attitude_offset;
+using diesel_vision_backend::attitude_lookup_s;
+using diesel_vision_backend::AttitudeSample;
+using diesel_vision_backend::classify_age;
+using diesel_vision_backend::FreshnessPolicy;
+using diesel_vision_backend::interpolate_attitude;
+using diesel_vision_backend::StaleReason;
+using diesel_vision_backend::valid_attitude_offset;
 
 constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 
@@ -69,10 +69,10 @@ TEST(FreshnessPolicy, 相等时是否算回退由调用方指定) {
 }
 
 TEST(FreshnessPolicy, 原因名字可用于统计输出) {
-    EXPECT_STREQ(diesel_auto_aim::stale_name(StaleReason::None), "FRESH");
-    EXPECT_STREQ(diesel_auto_aim::stale_name(StaleReason::FrameTooOld), "FRAME_TOO_OLD");
-    EXPECT_STREQ(diesel_auto_aim::stale_name(StaleReason::AttitudeGap), "ATTITUDE_GAP");
-    EXPECT_STREQ(diesel_auto_aim::stale_name(StaleReason::ClockBackward), "CLOCK_BACKWARD");
+    EXPECT_STREQ(diesel_vision_backend::stale_name(StaleReason::None), "FRESH");
+    EXPECT_STREQ(diesel_vision_backend::stale_name(StaleReason::FrameTooOld), "FRAME_TOO_OLD");
+    EXPECT_STREQ(diesel_vision_backend::stale_name(StaleReason::AttitudeGap), "ATTITUDE_GAP");
+    EXPECT_STREQ(diesel_vision_backend::stale_name(StaleReason::ClockBackward), "CLOCK_BACKWARD");
 }
 
 TEST(AttitudeInterpolation, 两侧样本之间按比例插值) {

@@ -3,7 +3,7 @@
 
 #include <cmath>
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 
 /// 时间新鲜度策略 流水线与控制环共用 禁止两处各写一个魔法数
 /// 三种年龄的物理含义不同 不能共用一个阈值
@@ -81,6 +81,6 @@ inline StaleReason classify_age(double sample_s, double now_s, double max_age_s,
     return StaleReason::None;
 }
 
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend
 
 #endif // FORAY_AUTO_AIM_FRESHNESS_POLICY_HPP

@@ -1,7 +1,7 @@
-#include "diesel_auto_aim/aim_pipeline.hpp"
+#include "diesel_vision_backend/aim_pipeline.hpp"
 #include <gtest/gtest.h>
 
-using namespace diesel_auto_aim;
+using namespace diesel_vision_backend;
 namespace {
 HandEyeCalibration handeye() {
     HandEyeCalibration h;

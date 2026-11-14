@@ -74,3 +74,10 @@ Commit: （首次提交）
 - [x] 本仓能独立 `colcon build`（本地：1 package finished）
 - [ ] CI 绿灯（待 PR 触发）
 - [x] 每个新增模块带独立可执行测试（友军过滤 7 条 · 云台角 5 条 · 整车 EKF 1 条，共 13 条全绿）
+
+## 2026-11-14 I4 仓名与包名迁移
+
+- GitHub 仓 `diesel_auto_aim` → `diesel_vision_backend`，本地目录与 `origin` 同步；PR #8 先合入 `dev`。
+- 包名 / CMake `project()` / `include/diesel_vision_backend/` / `namespace diesel_vision_backend` / guard `DIESEL_VISION_BACKEND_*` 全量改名。
+- 本地验证：`cmake -DBUILD_TESTING=ON` 构建通过，11 个测试程序 83 条全绿；后端仍只链 `Eigen3::Eigen` + `diesel_platform::link`。
+- 下一步：I5 前端多目标抽象、I6 interfaces 视觉消息、I7 Fusion/WorldSnapshot。

@@ -1,11 +1,11 @@
-#include "diesel_auto_aim/world_aim_solver.hpp"
+#include "diesel_vision_backend/world_aim_solver.hpp"
 
 #include <cmath>
 
-#include "diesel_auto_aim/aimer.hpp"
-#include "diesel_auto_aim/tracked_aim.hpp"
+#include "diesel_vision_backend/aimer.hpp"
+#include "diesel_vision_backend/tracked_aim.hpp"
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 
 WorldAimResult DirectWorldAimSolver::solve(const WorldAimRequest& request) const {
     if (!std::isfinite(request.observation_stamp_s) || request.observation_stamp_s < 0.0 ||
@@ -23,4 +23,4 @@ WorldAimResult DirectWorldAimSolver::solve(const WorldAimRequest& request) const
     return {command.yaw, command.pitch, command.valid};
 }
 
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend

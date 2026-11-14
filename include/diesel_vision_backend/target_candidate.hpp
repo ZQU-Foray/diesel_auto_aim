@@ -1,10 +1,10 @@
-#ifndef DIESEL_AUTO_AIM_TARGET_CANDIDATE_HPP
-#define DIESEL_AUTO_AIM_TARGET_CANDIDATE_HPP
+#ifndef DIESEL_VISION_BACKEND_TARGET_CANDIDATE_HPP
+#define DIESEL_VISION_BACKEND_TARGET_CANDIDATE_HPP
 
 #include <cstdint>
 #include <vector>
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 
 /// 敌我判定结果。
 /// Unknown 必须保留：IFF 取保守取向（宁可漏报，不可误报），不确定的目标由过滤器丢弃。
@@ -34,6 +34,6 @@ struct TargetCandidate {
 /// @return 仅含确认敌方目标的列表，保持输入的相对顺序
 std::vector<TargetCandidate> filter_friendly(const std::vector<TargetCandidate>& candidates);
 
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend
 
-#endif // DIESEL_AUTO_AIM_TARGET_CANDIDATE_HPP
+#endif // DIESEL_VISION_BACKEND_TARGET_CANDIDATE_HPP

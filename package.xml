@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>diesel_auto_aim</name>
+  <name>diesel_vision_backend</name>
   <version>0.0.1</version>
   <description>Foray 自瞄（哨兵/步兵/英雄共用）：多源目标融合与注入 · 友军过滤 · 弹道解算与云台伺服</description>
 

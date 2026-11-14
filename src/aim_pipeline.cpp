@@ -1,13 +1,13 @@
-#include "diesel_auto_aim/aim_pipeline.hpp"
+#include "diesel_vision_backend/aim_pipeline.hpp"
 
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
 
-#include "diesel_auto_aim/aimer.hpp"
-#include "diesel_auto_aim/tracked_aim.hpp"
+#include "diesel_vision_backend/aimer.hpp"
+#include "diesel_vision_backend/tracked_aim.hpp"
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 namespace {
 bool valid_quaternion(const Eigen::Quaterniond& q) {
     return q.coeffs().allFinite() && std::abs(q.norm() - 1.0) <= 0.002;
@@ -203,4 +203,4 @@ WorldAimResult advance_world_aim(const WorldAimResult& goal, const WorldAimResul
             true};
 }
 
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend

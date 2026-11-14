@@ -1,11 +1,11 @@
-#include "diesel_auto_aim/native_control_loop.hpp"
+#include "diesel_vision_backend/native_control_loop.hpp"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <stdexcept>
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 namespace {
 double monotonic_s() {
     return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch())
@@ -221,4 +221,4 @@ void NativeControlLoop::run() {
         }
     }
 }
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend

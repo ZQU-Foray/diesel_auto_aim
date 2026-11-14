@@ -3,9 +3,9 @@
 #include <gtest/gtest.h>
 #include <limits>
 
-#include "diesel_auto_aim/aimer.hpp"
+#include "diesel_vision_backend/aimer.hpp"
 
-using namespace diesel_auto_aim;
+using namespace diesel_vision_backend;
 
 namespace {
 constexpr double kBulletSpeed = 25.0; // 步兵哨兵弹速上限 直瞄不用 按接口传入

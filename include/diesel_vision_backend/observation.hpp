@@ -1,9 +1,9 @@
-#ifndef DIESEL_AUTO_AIM_OBSERVATION_HPP
-#define DIESEL_AUTO_AIM_OBSERVATION_HPP
+#ifndef DIESEL_VISION_BACKEND_OBSERVATION_HPP
+#define DIESEL_VISION_BACKEND_OBSERVATION_HPP
 
 #include <Eigen/Core>
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 
 // 前端检测前端输出的一帧观测（后端内部 POD）。
 // 检测类别、图像、PnP 都归 diesel_vision_frontend；后端只消费几何结果。
@@ -16,6 +16,6 @@ struct Observation {
     double reprojection_error = 0.0; ///< 前端重投影误差，像素
 };
 
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend
 
 #endif

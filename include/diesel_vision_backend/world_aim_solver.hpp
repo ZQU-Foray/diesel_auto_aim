@@ -1,9 +1,9 @@
 #ifndef FORAY_AUTO_AIM_WORLD_AIM_SOLVER_HPP
 #define FORAY_AUTO_AIM_WORLD_AIM_SOLVER_HPP
 
-#include "diesel_auto_aim/target.hpp"
+#include "diesel_vision_backend/target.hpp"
 
-namespace diesel_auto_aim {
+namespace diesel_vision_backend {
 
 // 解算输入 全部在同一个稳定世界系下 时间单位秒 长度单位米
 struct WorldAimRequest {
@@ -36,6 +36,6 @@ class DirectWorldAimSolver final : public WorldAimSolver {
     WorldAimResult solve(const WorldAimRequest& request) const override;
 };
 
-} // namespace diesel_auto_aim
+} // namespace diesel_vision_backend
 
 #endif // FORAY_AUTO_AIM_WORLD_AIM_SOLVER_HPP

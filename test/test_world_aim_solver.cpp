@@ -2,9 +2,9 @@
 #include <gtest/gtest.h>
 #include <limits>
 
-#include "diesel_auto_aim/world_aim_solver.hpp"
+#include "diesel_vision_backend/world_aim_solver.hpp"
 
-using namespace diesel_auto_aim;
+using namespace diesel_vision_backend;
 
 TEST(WorldAimSolverTest, DirectWorldAngleAndOrigin) {
     WorldAimRequest request;

@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "diesel_auto_aim/target_candidate.hpp"
+#include "diesel_vision_backend/target_candidate.hpp"
 
-using namespace diesel_auto_aim;
+using namespace diesel_vision_backend;
 
 // 1 只保留敌人
 TEST(FilterFriendly, 只保留敌人) {
