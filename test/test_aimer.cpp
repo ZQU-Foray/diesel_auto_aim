@@ -1,6 +1,7 @@
 #include <Eigen/Dense>
 #include <cmath>
 #include <gtest/gtest.h>
+#include <limits>
 
 #include "diesel_auto_aim/aimer.hpp"
 
@@ -43,4 +44,12 @@ TEST(AimAt, 右前方四十五度) {
 TEST(AimAt, 正上方不可信) {
     const auto command = aim_at({0.0, 0.0, 5.0}, kBulletSpeed);
     EXPECT_FALSE(command.valid);
+}
+
+TEST(AimAt, 非有限观测不产生有效指令) {
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    const double inf = std::numeric_limits<double>::infinity();
+    EXPECT_FALSE(aim_at({nan, 0.0, 1.0}, kBulletSpeed).valid);
+    EXPECT_FALSE(aim_at({1.0, inf, 1.0}, kBulletSpeed).valid);
+    EXPECT_FALSE(aim_at({1.0, 0.0, nan}, kBulletSpeed).valid);
 }

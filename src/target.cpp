@@ -6,21 +6,9 @@ namespace diesel_auto_aim {
 
 namespace {
 
-// 过程噪声 加速度方差和角加速度方差
-// 测试的靶车不转动 角度速度极小 防止偏移(靶车测试阶段)
-constexpr double v1 = 1.0;  // 加速度方差 靶车测试没那么灵活 方差小 sp默认100.0
-constexpr double v2 = 1e-6; // 角速度方差
-
 // 观测噪声 位置误差约 1cm → (0.01)² = 1e-4
 // 现在测试的相机不同 待新相机标定后替换为实测值
 constexpr double kMeasVar = 1e-4;
-// 车体的装甲板认板子的距离们限 滤波器未收敛的时候有误差
-// 而且r需要根据实际情况调整再算(后面实际测会改)
-constexpr double kAssociateMaxDist = 0.5;
-
-// NIS 卡方门限 dof维度为3(xyz) 取地95% = 7.815
-// 来自sp的nis 数据来自概率论的卡方分布临界值表
-constexpr double kNisThreshold = 7.815;
 
 double limit_rad(double angle) {
     while (angle > M_PI) {
@@ -50,7 +38,17 @@ Target::Target(const Eigen::Vector3d& xyz0, double a0, double r0,
     // 靶车的装甲板相对 h l 为 0
 }
 
+void Target::set_process_noise(double acceleration_variance, double angular_acceleration_variance) {
+    if (std::isfinite(acceleration_variance) && acceleration_variance > 0.0 &&
+        std::isfinite(angular_acceleration_variance) && angular_acceleration_variance > 0.0) {
+        acceleration_variance_ = acceleration_variance;
+        angular_acceleration_variance_ = angular_acceleration_variance;
+    }
+}
+
 void Target::predict(double dt) {
+    const double v1 = acceleration_variance_;
+    const double v2 = angular_acceleration_variance_;
     // 1 F矩阵
     const double a = dt * dt * dt * dt / 4;
     const double b = dt * dt * dt / 2;
@@ -78,6 +76,14 @@ void Target::predict(double dt) {
                       {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
                       {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
     // clang-format on
+    // r / l / h 的随机游走：默认 0 时保持旧行为（三者完全冻结，配置错了就永远改不回）。
+    // 实车几何不会突变，但标定有误差、板面安装有公差，留一点"我还可能猜错"的余地。
+    if (plate_random_walk_ > 0.0) {
+        const double q_plate = dt * plate_random_walk_;
+        Q(8, 8) = q_plate;
+        Q(9, 9) = q_plate;
+        Q(10, 10) = q_plate;
+    }
     // 预测
     x_ = F * x_;
     P_ = F * P_ * F.transpose() + Q;
@@ -93,6 +99,10 @@ TargetState Target::state() const {
     s.l = x_[9];
     s.h = x_[10];
     return s;
+}
+
+Eigen::Vector3d Target::predicted_armor_xyz(int armor_id) const {
+    return h_armor_xyz(x_, armor_id);
 }
 
 // 由整车状态算第 id 块装甲板的位置
@@ -138,28 +148,15 @@ Eigen::Matrix<double, 3, 11> Target::h_jacobian(const Eigen::Matrix<double, 11, 
     // clang-format on
     return H;
 }
-// xyz_measured 来自solver观察的实际装甲板位置
-// 在内部完成数据关联，避免调用方绕过认板逻辑
-void Target::update(const Eigen::Vector3d& xyz_measured) {
-    const int armor_id = associate(xyz_measured).id;
-    if (armor_id == -1) {
-        return;
-    }
-    // 用当前状态计算出第armor_id块板子在哪里
-    const Eigen::Vector3d xyz_predicted = h_armor_xyz(x_, armor_id);
-    // 敏感度矩阵：状态改变一点，预测位置会变化多少
-    const Eigen::Matrix<double, 3, 11> H = h_jacobian(x_, armor_id);
-    // 观测减去预测
-    const Eigen::Vector3d residual = xyz_measured - xyz_predicted;
-    // 观测噪声矩阵（重投影误差），用于 NIS
-    const Eigen::Matrix<double, 3, 3> R = Eigen::Matrix<double, 3, 3>::Identity() * kMeasVar;
-    // 新息协方差
-    const Eigen::Matrix<double, 3, 3> S = H * P_ * H.transpose() + R;
-    // 马氏距离
-    const double nis = residual.transpose() * S.inverse() * residual;
-    if (nis > kNisThreshold)
-        return; // 野值 丢掉这一帧
-
+// xyz_measured 来自solver观察的实际装甲板位置 armor_id 第几个板子
+void Target::update(const Eigen::Vector3d& xyz_measured, int armor_id) {
+    const Eigen::Vector3d xyz_predicted =
+        h_armor_xyz(x_, armor_id); // 用当前状态计算出第armor_id块板子在哪里
+    const Eigen::Matrix<double, 3, 11> H =
+        h_jacobian(x_, armor_id); // 敏感度矩阵 状态改变一点 预测位置会变化多少
+    const Eigen::Vector3d residual = xyz_measured - xyz_predicted; // 观测减去预测
+    const Eigen::Matrix<double, 3, 3> R =
+        position_measurement_covariance(xyz_measured); // 观测噪声 重投影误差
     const Eigen::Matrix<double, 11, 3> K =
         P_ * H.transpose() * (H * P_ * H.transpose() + R).inverse(); // 跟一维的一样 计算k
     x_ += K * residual;
@@ -167,23 +164,92 @@ void Target::update(const Eigen::Vector3d& xyz_measured) {
     const Eigen::Matrix<double, 11, 11> I = Eigen::Matrix<double, 11, 11>::Identity();
     P_ = (I - K * H) * P_ * (I - K * H).transpose() + K * R * K.transpose();
 }
-// 观测的装甲板 对比四个由状态中心解算出来的装甲板 得出是哪一个装甲板
-AssociationResult Target::associate(const Eigen::Vector3d& xyz_measured) const {
-    AssociationResult result;
-    // 野值默认-1 空值也是-1
-    result.id = -1;
-    double best_dist = kAssociateMaxDist; // 以野值为阈值
-    for (int id = 0; id < armor_num_; ++id) {
-        auto predicted_armor_xyz =
-            h_armor_xyz(x_, id); // x_输入的是目标整车状态 根据目标整车状态来计算的
-        auto dist = (xyz_measured - predicted_armor_xyz).norm();
-        if (dist < best_dist) {
-            best_dist = dist;
-            result.id = id;
-        }
+
+void Target::update(const Eigen::Vector3d& xyz_measured, int armor_id, double yaw_measured,
+                    double yaw_variance, double noise_scale) {
+    // 四维观测：板中心 xyz + 对应板的朝向。仅用 xyz 时，原地转车可能被解释成车体平移。
+    Eigen::Matrix<double, 4, 11> H = Eigen::Matrix<double, 4, 11>::Zero();
+    H.topRows<3>() = h_jacobian(x_, armor_id);
+    H(3, 6) = 1.0;
+    Eigen::Matrix<double, 4, 1> residual;
+    residual.head<3>() = xyz_measured - h_armor_xyz(x_, armor_id);
+    residual[3] = limit_rad(yaw_measured - (x_[6] + armor_id * 2.0 * M_PI / armor_num_));
+    const double scale = (std::isfinite(noise_scale) && noise_scale > 0.0) ? noise_scale : 1.0;
+    Eigen::Matrix<double, 4, 4> R = Eigen::Matrix<double, 4, 4>::Zero();
+    R.topLeftCorner<3, 3>() = scale * scale * position_measurement_covariance(xyz_measured);
+    R(3, 3) = scale * scale * yaw_variance;
+    const Eigen::Matrix<double, 11, 4> K =
+        P_ * H.transpose() * (H * P_ * H.transpose() + R).inverse();
+    x_ += K * residual;
+    x_[6] = limit_rad(x_[6]);
+    const Eigen::Matrix<double, 11, 11> I = Eigen::Matrix<double, 11, 11>::Identity();
+    P_ = (I - K * H) * P_ * (I - K * H).transpose() + K * R * K.transpose();
+}
+
+// 位置观测协方差：沿视线方向（深度）与垂直视线方向（横向）分开给。
+// 单目 PnP 的深度误差 ≈ sigma_px * z² / (fx * 板宽)，横向误差 ≈ sigma_px * z / fx，
+// 两者差一个 z/板宽 的因子，距离越远差得越多；各向同性 R 会让滤波器把测距偏差
+// 误当成车体平移，这是"车心被拖着走"的主要来源。
+Eigen::Matrix3d Target::position_measurement_covariance(const Eigen::Vector3d& xyz_measured) const {
+    if (!sensor_origin_world_ || sigma_lateral_m_ <= 0.0 || sigma_range_coeff_ <= 0.0)
+        return Eigen::Matrix3d::Identity() * kMeasVar; // 未配置：保持旧行为
+
+    const Eigen::Vector3d offset = xyz_measured - *sensor_origin_world_;
+    const double range = offset.norm();
+    if (!std::isfinite(range) || range < 1e-3)
+        return Eigen::Matrix3d::Identity() * kMeasVar;
+
+    const Eigen::Vector3d u = offset / range; // 视线方向
+    const Eigen::Matrix3d tangent =
+        Eigen::Matrix3d::Identity() - u * u.transpose(); // 垂直于视线的平面
+    const double sigma_depth = sigma_range_coeff_ * range * range;
+    return sigma_lateral_m_ * sigma_lateral_m_ * tangent +
+           sigma_depth * sigma_depth * (u * u.transpose());
+}
+
+void Target::set_position_noise_model(const Eigen::Vector3d& sensor_origin_world,
+                                      double sigma_lateral_m, double sigma_range_coeff) {
+    if (!sensor_origin_world.allFinite() || !std::isfinite(sigma_lateral_m) ||
+        !std::isfinite(sigma_range_coeff) || sigma_lateral_m <= 0.0 || sigma_range_coeff <= 0.0) {
+        clear_position_noise_model();
+        return;
     }
-    result.dist = best_dist;
-    return result;
+    sensor_origin_world_ = sensor_origin_world;
+    sigma_lateral_m_ = sigma_lateral_m;
+    sigma_range_coeff_ = sigma_range_coeff;
+}
+
+void Target::clear_position_noise_model() {
+    sensor_origin_world_.reset();
+    sigma_lateral_m_ = 0.0;
+    sigma_range_coeff_ = 0.0;
+}
+
+double Target::range_sigma_coeff(double sigma_px, double focal_length_px, double board_width_m) {
+    if (!std::isfinite(sigma_px) || !std::isfinite(focal_length_px) ||
+        !std::isfinite(board_width_m) || sigma_px <= 0.0 || focal_length_px <= 0.0 ||
+        board_width_m <= 0.0)
+        return 0.0;
+    return sigma_px / (focal_length_px * board_width_m);
+}
+
+void Target::set_plate_random_walk(double var_m2_per_s) {
+    plate_random_walk_ = (std::isfinite(var_m2_per_s) && var_m2_per_s > 0.0) ? var_m2_per_s : 0.0;
+}
+
+void Target::seed_height_delta(double height_delta_m, double variance_m2) {
+    if (!std::isfinite(height_delta_m))
+        return;
+    x_[10] = height_delta_m;
+    if (std::isfinite(variance_m2) && variance_m2 > 0.0)
+        P_(10, 10) = variance_m2;
+}
+
+bool Target::radius_in_range(double lower_m, double upper_m) const {
+    const double r = x_[8];
+    const double alternate = x_[8] + x_[9];
+    return std::isfinite(r) && std::isfinite(alternate) && r > lower_m && r < upper_m &&
+           alternate > lower_m && alternate < upper_m;
 }
 
 } // namespace diesel_auto_aim
