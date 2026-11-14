@@ -7,9 +7,11 @@
 #include <vector>
 
 #include "diesel_vision_backend/freshness_policy.hpp"
+#include "diesel_vision_backend/fusion.hpp"
 #include "diesel_vision_backend/observation.hpp"
 #include "diesel_vision_backend/tracker.hpp"
 #include "diesel_vision_backend/world_aim_solver.hpp"
+#include "diesel_vision_backend/world_snapshot.hpp"
 
 namespace diesel_vision_backend {
 
@@ -42,6 +44,7 @@ struct AimPipelineConfig {
     AimBackend backend = AimBackend::TrackerEkf;
     double prediction_s = 0.0; // 显式实验提前量 不暗中添加未知延迟或飞行时间
     FreshnessPolicy freshness; // 时间新鲜度门限 与 NativeControlLoop 共用同一份
+    FusionConfig fusion; // 多源观测融合参数（来源优先级、过期门限、同板合并）
 };
 
 /// 当前台架的实验Tracker配置 由装配入口注入实测半径与关联门
@@ -55,6 +58,10 @@ struct AimPipelineResult {
     double frame_stamp_s = 0.0;
     WorldAimResult angles;
     std::optional<TrackerResult> tracked;
+    WorldSnapshotData snapshot; ///< 本帧世界模型快照；无轨迹时 valid=false
+    int fused_count = 0;        ///< 融合后留下的观测数
+    int fused_dropped = 0;      ///< 融合阶段丢弃数（过期/类别/非法）
+    int fused_merged = 0;       ///< 被判为同一块板而合并的观测数
     int selected_plate = -1;
     int world_observation_count = 0;
 };

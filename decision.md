@@ -464,3 +464,27 @@ Reason: 仓名要和职责一致——本仓已不含任何检测代码，继续
 Source: 迁移计划 I4（dev_task `vision-front-backend-split`）；PR #8（merge commit `96d794e`）。
 
 Rejected: 新建 `diesel_vision_backend` 仓并搬代码（丢历史、丢 PR、要重配 CI 与权限）；只改 README 不改包名（`find_package` 与 `include` 路径仍指旧名）。
+
+## Decision / Date: 2026-11-14 融合放在几何变换之前，快照不暴露未确认轨迹
+
+**Context**: 前端与队友共享会给出同一块板的重复观测，且来源精度不同（自车高精度、队友低精度有延迟）。
+后端此前把所有观测一律送入 Tracker，重复观测会被当成两次独立观测累计信息，等于虚增置信度。
+同时决策层需要一个「世界模型快照」，但后端只有单目标 Tracker。
+
+**Decision**:
+1. 融合在**几何变换之前**、以相机系坐标做：同板号 + 距离 <0.15 m 合并，自车优先，**不平均位置**；
+2. 过期门限 100 ms（三个前端帧周期），未来戳直接丢弃；
+3. `build_world_snapshot()` 只输出已确认轨迹：`Lost` → `valid=false`，`Detecting` 置信度上限 0.5，
+   `Tracking` 随丢帧衰减，`TempLost` 固定 0.2；
+4. 未打戳观测按本帧戳处理，兼容旧调用方；显式打戳的观测仍按自身时间判过期。
+
+**Reason**: 在相机系合并可以避免两车不同的手眼标定误差被混进同一位置；不平均位置是为了让「自车优先」
+真正生效，而不是把队友的偏差摊薄到自车观测上。快照不给未确认轨迹，是为了让决策层不可能把
+Detecting 当成可开火目标——宁可少一条轨迹，也不给一个假锁定。
+
+**Rejected**: 在世界系合并（需先把队友观测转到本车世界系，引入标定误差叠加）；
+按置信度加权平均位置（观测不是独立同分布，平均会产生「看起来更准」的假象）；
+让快照输出 `Detecting` 轨迹并附状态位（消费方很难不误用）。
+
+**Source**: `AimPipelineResult`、`TrackerResult`、`diesel_interfaces/protocol/vision.yaml` 的
+`TrackedTarget` / `WorldSnapshot` 字段语义。

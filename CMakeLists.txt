@@ -18,6 +18,8 @@ add_library(${PROJECT_NAME} SHARED
     src/tracked_aim.cpp
     src/world_aim_solver.cpp
     src/aim_pipeline.cpp
+    src/fusion.cpp
+    src/world_snapshot.cpp
     src/native_control_loop.cpp
     src/control_frame_adapter.cpp
 )
@@ -45,6 +47,12 @@ if(BUILD_TESTING)
     find_package(ament_cmake_gtest REQUIRED)
     ament_add_gtest(test_freshness_policy test/test_freshness_policy.cpp)
     target_link_libraries(test_freshness_policy ${PROJECT_NAME})
+
+    ament_add_gtest(test_fusion test/test_fusion.cpp)
+    target_link_libraries(test_fusion ${PROJECT_NAME})
+
+    ament_add_gtest(test_world_snapshot test/test_world_snapshot.cpp)
+    target_link_libraries(test_world_snapshot ${PROJECT_NAME})
 
     ament_add_gtest(test_aim_pipeline test/test_aim_pipeline.cpp)
     target_link_libraries(test_aim_pipeline ${PROJECT_NAME})

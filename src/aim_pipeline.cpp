@@ -120,13 +120,20 @@ AimPipelineResult AimPipeline::process_observations(std::vector<Observation> obs
         return result;
     }
     last_frame_stamp_s_ = stamp;
+    // 多源观测先融合再送跟踪：自车相机优先、过期与非法观测在这里一次性挡掉。
+    // 未打戳的观测（stamp_s <= 0）按本帧戳处理——前端未提供逐观测时间时的兼容路径，
+    // 显式打戳的观测仍按自己的时间判过期。
+    for (auto& observation : observations) {
+        if (!(observation.stamp_s > 0.0))
+            observation.stamp_s = stamp;
+    }
+    const FusionResult fused = fuse_observations(observations, now, config_.fusion);
+    result.fused_count = static_cast<int>(fused.observations.size());
+    result.fused_dropped = fused.dropped_stale + fused.dropped_class + fused.dropped_invalid;
+    result.fused_merged = fused.merged;
     std::vector<ArmorTrackObservation> tracked_observations;
     std::vector<Eigen::Vector3d> direct;
-    for (const auto& observation : observations) {
-        if (observation.armor_id < 0 || observation.armor_id > 2)
-            continue;
-        if (!observation.xyz_camera.allFinite() || observation.xyz_camera.z() <= 0)
-            continue;
+    for (const auto& observation : fused.observations) {
         if (!std::isfinite(observation.reprojection_error) || observation.reprojection_error < 0 ||
             observation.reprojection_error > 3.)
             continue;
@@ -181,6 +188,9 @@ AimPipelineResult AimPipeline::process_observations(std::vector<Observation> obs
         if (result.valid)
             previous_selected_ = selection.armor_id;
     }
+    if (result.tracked.has_value())
+        result.snapshot =
+            build_world_snapshot(*result.tracked, stamp, config_.tracker.max_missed_frames);
     if (!result.valid || std::abs(result.angles.pitch_rad) >= 70. * M_PI / 180.) {
         result.valid = false;
         result.reason = "invalid aim direction";

@@ -81,3 +81,15 @@ Commit: （首次提交）
 - 包名 / CMake `project()` / `include/diesel_vision_backend/` / `namespace diesel_vision_backend` / guard `DIESEL_VISION_BACKEND_*` 全量改名。
 - 本地验证：`cmake -DBUILD_TESTING=ON` 构建通过，11 个测试程序 83 条全绿；后端仍只链 `Eigen3::Eigen` + `diesel_platform::link`。
 - 下一步：I5 前端多目标抽象、I6 interfaces 视觉消息、I7 Fusion/WorldSnapshot。
+
+## 2026-11-14 I7 融合层与 WorldSnapshot
+
+- 新增 `fusion.hpp/.cpp`：`fuse_observations()` 在几何变换前挡掉过期（>100 ms）、非装甲板类别、
+  非法板号/几何的观测；同板号且距离 <0.15 m 判为同一块板，**自车相机优先**，不平均位置。
+- 新增 `world_snapshot.hpp/.cpp`：`build_world_snapshot()` 输出 0/1 条 `SnapshotTrack`（世界系位置/速度/置信度/状态），
+  `track_confidence()` 让 `Lost=0`、`Detecting≤0.5`、`Tracking` 随丢帧衰减、`TempLost=0.2`。
+- `AimPipelineResult` 增加 `snapshot`、`fused_count`、`fused_dropped`、`fused_merged`；
+  `AimPipelineConfig` 增加 `FusionConfig fusion`。
+- 未打戳观测（`stamp_s <= 0`）按本帧戳处理，显式打戳的仍按自身时间判过期。
+- 测试：新增 `test_fusion`（8 条）与 `test_world_snapshot`（4 条），`test_aim_pipeline` 补 3 条
+  （多源合并、过期观测被融合层挡掉、快照只在确认后暴露轨迹）；全仓 98 条 + 前端 28 条 = 126 条全绿。

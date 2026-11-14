@@ -89,6 +89,66 @@ TEST(AimPipeline, RejectsIllegalPlateAndGeometry) {
     v[0].reprojection_error = 3.5;
     EXPECT_FALSE(p.process_observations(v, t + 2., t + 2.02, history(t + 2.)).valid);
 }
+TEST(AimPipeline, FusesDuplicateSourceObservationsBeforeTracking) {
+    AimPipeline p(handeye(), AimPipelineConfig{});
+    p.configure([] {
+        AimPipelineConfig c;
+        c.tracker = runtime_tracker_config(.2, 1.0);
+        return c;
+    }());
+    auto observations = frame();
+    // 友军共享的同一块板先到，自车后到且置信度更低：融合后只保留一条，自车优先
+    Observation ally = observations.front();
+    ally.source = ObservationSource::AllyShared;
+    ally.confidence = .95;
+    observations.front().confidence = .6;
+    std::vector<Observation> input{ally, observations.front()};
+    AimPipelineResult r;
+    for (double t : {10., 10.02, 10.04}) {
+        r = p.process_observations(input, t, t + .02, history(t));
+    }
+    EXPECT_EQ(r.fused_count, 1);
+    EXPECT_EQ(r.fused_merged, 1);
+    ASSERT_TRUE(r.tracked);
+    EXPECT_EQ(r.tracked->state, TrackerState::Tracking);
+}
+
+TEST(AimPipeline, StaleObservationIsDroppedByFusionEvenWhenFrameIsFresh) {
+    AimPipeline p(handeye(), AimPipelineConfig{});
+    p.configure([] {
+        AimPipelineConfig c;
+        c.tracker = runtime_tracker_config(.2, 1.0);
+        c.fusion.max_age_s = .05;
+        return c;
+    }());
+    std::vector<Observation> input = frame();
+    input.front().stamp_s = 9.0; // 比本帧早 1 s，超过融合门限
+    const AimPipelineResult r = p.process_observations(input, 10., 10.02, history(10.));
+    EXPECT_EQ(r.fused_count, 0);
+    EXPECT_EQ(r.fused_dropped, 1);
+}
+
+TEST(AimPipeline, SnapshotOnlyCarriesConfirmedTracks) {
+    AimPipeline p(handeye(), AimPipelineConfig{});
+    p.configure([] {
+        AimPipelineConfig c;
+        c.tracker = runtime_tracker_config(.2, 1.0);
+        return c;
+    }());
+    // 第一帧不可能已确认：快照不得暴露轨迹，否则决策层会当成真目标
+    const AimPipelineResult first = p.process_observations(frame(), 10., 10.02, history(10.));
+    EXPECT_FALSE(first.snapshot.valid);
+    EXPECT_TRUE(first.snapshot.tracks.empty());
+
+    AimPipelineResult confirmed;
+    for (double t : {10.02, 10.04, 10.06}) {
+        confirmed = p.process_observations(frame(), t, t + .02, history(t));
+    }
+    EXPECT_TRUE(confirmed.snapshot.valid);
+    ASSERT_EQ(confirmed.snapshot.tracks.size(), 1U);
+    EXPECT_EQ(confirmed.snapshot.tracks.front().armor_id, 0);
+}
+
 TEST(AimPipeline, RateLimitsAndRejectsInvalidValues) {
     WorldAimResult goal{.5, .3, true}, previous{0, 0, true};
     EXPECT_NEAR(advance_world_aim(goal, previous, .01, 30.).yaw_rad, .3 * M_PI / 180., 1e-9);
