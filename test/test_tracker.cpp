@@ -28,6 +28,12 @@ ArmorTrackObservation plate(double x, double y, int robot_id = 1, double yaw = 0
 
 } // namespace
 
+// 默认构造的配置必须是可用的：调用方（含 AimPipeline 默认配置）不该因为漏填字段
+// 而在构造期抛 "Invalid tracker configuration"。
+TEST(Tracker, 默认配置可直接构造) {
+    EXPECT_NO_THROW(Tracker{TrackerConfig{}});
+}
+
 TEST(Tracker, 类别契约拒绝无目标和其他编号) {
     for (int invalid_id : {-1, 3, 7}) {
         Tracker tracker(config());

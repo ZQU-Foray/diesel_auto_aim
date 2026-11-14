@@ -27,10 +27,14 @@ struct TargetInitProfile {
 };
 
 struct TrackerConfig {
+    // 默认值必须让 TrackerConfig{} 通过 Tracker 的构造校验：默认构造曾留下未初始化的
+    // 标量与协方差，任何拿默认配置直接建 AimPipeline 的调用方都会在构造期抛
+    // "Invalid tracker configuration"（离线复现：test_aim_pipeline 的非法板号用例）。
+    // 这里的数值与 runtime_tracker_config(0.2, 1.0) 保持一致，调用方可整体覆盖。
     AssociationStrategy association_strategy = AssociationStrategy::ForayGated;
-    double radius_m;
-    int armor_count;
-    double association_gate_m;
+    double radius_m = 0.2; ///< 装甲板外接半径（m），标定值与 PnP 配置一致
+    int armor_count = 4;
+    double association_gate_m = 1.0;
     // 4 板周向间隔 90°；门限必须小于半间距 45°(0.785 rad) 才能唯一确定板号。
     // 1.2 rad(69°) 比半间距还宽，实测会出现"把邻板观测塞给当前板"的静默串板
     // （离线：1.2 rad 时 6/44 次探测串板，0.7 rad 时 0 次）。
@@ -41,10 +45,13 @@ struct TrackerConfig {
     double association_yaw_gate_rad = 1.2; ///< 约 69°；收到 0.7 前请先看模拟器 A/B 数据
     double adjacent_switch_margin_m = 0.0; ///< 两候选距离近似打平时优先相邻板；0 表示关闭
     double yaw_variance_rad2 = 0.04; ///< PnP 朝向噪声方差，默认 0.2 rad 标准差；实测后调整
-    int confirmation_frames;
-    int max_missed_frames;
-    double max_frame_gap_s;
-    Eigen::Matrix<double, 11, 1> initial_covariance_diag;
+    int confirmation_frames = 3;
+    int max_missed_frames = 8;
+    double max_frame_gap_s = 0.25; ///< 前端 30–60 fps，超过 250 ms 视为断流
+    /// 初值协方差：位置 0.25、速度 1、角速度 25、几何量 0.01；沿用 rb2025 台架取值。
+    Eigen::Matrix<double, 11, 1> initial_covariance_diag =
+        (Eigen::Matrix<double, 11, 1>() << .25, 1., .25, 1., .25, 1., 1., 25., .01, .01, .01)
+            .finished();
     /// 比赛普通目标采用 SP 的高机动先验；其他场景由调用方按运动日志覆盖。
     double acceleration_variance = 100.0;
     double angular_acceleration_variance = 400.0;
