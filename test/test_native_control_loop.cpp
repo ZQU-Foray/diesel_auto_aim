@@ -1,5 +1,5 @@
-#include "diesel_auto_aim/native_control_loop.hpp"
 #include "diesel/platform/link/robolink_frame_parser.hpp"
+#include "diesel_auto_aim/native_control_loop.hpp"
 #include <chrono>
 #include <cstring>
 #include <fcntl.h>

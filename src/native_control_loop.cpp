@@ -123,8 +123,8 @@ void NativeControlLoop::run() {
                 }
             }
             // 保留旧实机工具的准入条件 不能因改成C++就绕过故障和电控链路状态
-            feedback_.ready = state == diesel::platform::link::HostLinkState::Active && pose_ready &&
-                              feedback_.status && feedback_.status->link_state == 3 &&
+            feedback_.ready = state == diesel::platform::link::HostLinkState::Active &&
+                              pose_ready && feedback_.status && feedback_.status->link_state == 3 &&
                               feedback_.status->fault_flags == 0 && last_status >= 0 &&
                               now - last_status <= .1;
             if (state == diesel::platform::link::HostLinkState::Disconnected) {

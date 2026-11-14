@@ -12,7 +12,8 @@ namespace diesel_auto_aim {
 namespace {
 
 std::optional<diesel::platform::link::ControlSnapshot>
-to_control_snapshot(const GimbalCommand& command, const diesel::platform::link::GimbalAttitude& attitude) {
+to_control_snapshot(const GimbalCommand& command,
+                    const diesel::platform::link::GimbalAttitude& attitude) {
     if (!command.valid || !std::isfinite(command.yaw) || !std::isfinite(command.pitch))
         return std::nullopt;
     // v0.2 §4.8：只有姿态有效且 IMU READY 时才把相对角转换为世界系目标角。
@@ -61,20 +62,22 @@ to_control_snapshot(const GimbalCommand& command, const diesel::platform::link::
 
 std::optional<std::vector<std::uint8_t>>
 make_gimbal_control_frame(const GimbalCommand& command,
-                          const diesel::platform::link::GimbalAttitude& attitude, std::uint32_t control_seq,
-                          std::uint16_t frame_seq, std::uint16_t message_seq,
-                          std::uint32_t timestamp_us) {
+                          const diesel::platform::link::GimbalAttitude& attitude,
+                          std::uint32_t control_seq, std::uint16_t frame_seq,
+                          std::uint16_t message_seq, std::uint32_t timestamp_us) {
     auto snapshot = to_control_snapshot(command, attitude);
     if (!snapshot)
         return std::nullopt;
     snapshot->control_seq = control_seq;
     // 其余字段保持零；是否生效由电控裁决，并通过 SYSTEM_STATUS 回读。
     return diesel::platform::link::make_control_snapshot_frame(frame_seq, timestamp_us, message_seq,
-                                                       *snapshot);
+                                                               *snapshot);
 }
 
-bool queue_gimbal_command(diesel::platform::link::RoboLinkHostLink& link, const GimbalCommand& command,
-                          const diesel::platform::link::GimbalAttitude& attitude, std::uint64_t now_ms) {
+bool queue_gimbal_command(diesel::platform::link::RoboLinkHostLink& link,
+                          const GimbalCommand& command,
+                          const diesel::platform::link::GimbalAttitude& attitude,
+                          std::uint64_t now_ms) {
     const auto snapshot = to_control_snapshot(command, attitude);
     return snapshot && link.queue_control(*snapshot, now_ms);
 }

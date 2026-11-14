@@ -1,10 +1,10 @@
 #ifndef FORAY_AUTO_AIM_NATIVE_CONTROL_LOOP_HPP
 #define FORAY_AUTO_AIM_NATIVE_CONTROL_LOOP_HPP
 
-#include "diesel_auto_aim/aim_pipeline.hpp"
-#include "diesel_auto_aim/freshness_policy.hpp"
 #include "diesel/platform/link/robolink_host_link.hpp"
 #include "diesel/platform/link/usb_cdc_port.hpp"
+#include "diesel_auto_aim/aim_pipeline.hpp"
+#include "diesel_auto_aim/freshness_policy.hpp"
 #include <atomic>
 #include <deque>
 #include <mutex>
@@ -17,7 +17,8 @@ struct NativeControlFeedback {
     bool armed = false;
     bool active = false;
     std::uint64_t queued_controls = 0; // 本机排队数量 不冒充电机执行次数
-    diesel::platform::link::HostLinkState link_state = diesel::platform::link::HostLinkState::Disconnected;
+    diesel::platform::link::HostLinkState link_state =
+        diesel::platform::link::HostLinkState::Disconnected;
     std::optional<diesel::platform::link::SystemStatus> status;
     WorldAimResult measured;
     WorldAimResult sent;

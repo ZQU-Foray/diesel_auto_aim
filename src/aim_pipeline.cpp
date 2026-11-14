@@ -127,12 +127,12 @@ AimPipelineResult AimPipeline::process_observations(std::vector<Observation> obs
             continue;
         if (!observation.xyz_camera.allFinite() || observation.xyz_camera.z() <= 0)
             continue;
-        if (!std::isfinite(observation.reprojection_error) ||
-            observation.reprojection_error < 0 || observation.reprojection_error > 3.)
+        if (!std::isfinite(observation.reprojection_error) || observation.reprojection_error < 0 ||
+            observation.reprojection_error > 3.)
             continue;
         // 手眼与姿态只在后端转一次：世界系 = q * (R_camera_to_gimbal * p_camera + t)
-        const Eigen::Vector3d world = (*q) * (handeye_.rotation * observation.xyz_camera +
-                                              handeye_.translation_m);
+        const Eigen::Vector3d world =
+            (*q) * (handeye_.rotation * observation.xyz_camera + handeye_.translation_m);
         direct.push_back(world);
         if (!observation.normal_valid || !observation.normal_camera.allFinite())
             continue;

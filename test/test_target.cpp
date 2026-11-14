@@ -53,8 +53,8 @@ TEST(Target, 静止的目标收敛并且误差小于观测误差) {
         z.y() += noise(gen);
         z.z() += noise(gen);
 
-        target.predict(kDt); // 更新预测
-        target.update(z, id);    // 更新观测
+        target.predict(kDt);  // 更新预测
+        target.update(z, id); // 更新观测
 
         sum_meas_err += (z - true_armor_xyz(center, yaw, id))
                             .squaredNorm(); // z是全部加上观测噪声的读数
@@ -98,8 +98,8 @@ TEST(Target, 匀速的目标能估计出速度) {
         z.y() += noise(gen);
         z.z() += noise(gen);
 
-        target.predict(kDt); // 当前时刻的预测
-        target.update(z, id);    // 更新当前时刻的滤波后的值
+        target.predict(kDt);  // 当前时刻的预测
+        target.update(z, id); // 更新当前时刻的滤波后的值
 
         // 为了观测实验的结果只看后半段落
         if (i < kFrames / 2) {
@@ -143,8 +143,8 @@ TEST(Target, 四块板轮流出现时中心不跳变) {
         z.y() += noise(gen);
         z.z() += noise(gen);
 
-        target.predict(kDt); // 预测当前的
-        target.update(z, id);    // 更新滤波数值
+        target.predict(kDt);  // 预测当前的
+        target.update(z, id); // 更新滤波数值
         // 前面在收敛 统计稍微后一点的 240 而不是 250是为了多验证一个装甲板
         if (i < 240) {
             continue;
@@ -168,7 +168,8 @@ TEST(Target, 预测板位可按编号关联并挡野值) {
         int best_id = -1;
         double best = 1e9;
         for (int j = 0; j < kArmorNum; ++j) {
-            const double d = (target.predicted_armor_xyz(j) - true_armor_xyz(center, yaw, id)).norm();
+            const double d =
+                (target.predicted_armor_xyz(j) - true_armor_xyz(center, yaw, id)).norm();
             if (d < best) {
                 best = d;
                 best_id = j;

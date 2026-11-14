@@ -8,10 +8,10 @@
 
 #include <gtest/gtest.h>
 
-#include "diesel_auto_aim/aimer.hpp"
-#include "diesel_auto_aim/control_frame_adapter.hpp"
 #include "diesel/platform/link/robolink_codec.hpp"
 #include "diesel/platform/link/robolink_host_link.hpp"
+#include "diesel_auto_aim/aimer.hpp"
+#include "diesel_auto_aim/control_frame_adapter.hpp"
 
 namespace {
 
@@ -37,7 +37,7 @@ diesel::platform::link::GimbalAttitude ready_attitude() {
 
 TEST(ControlFrameAdapter, EncodesValidGimbalCommandWithoutFire) {
     const diesel_auto_aim::GimbalCommand command{3.14159265358979323846 / 2.0,
-                                                -3.14159265358979323846 / 4.0, true};
+                                                 -3.14159265358979323846 / 4.0, true};
     const auto frame =
         diesel_auto_aim::make_gimbal_control_frame(command, ready_attitude(), 21, 3, 4, 1000);
     ASSERT_TRUE(frame.has_value());
@@ -127,7 +127,8 @@ TEST(ControlFrameAdapter, AimResultCanEnterProtocolFrame) {
 TEST(ControlFrameAdapter, RefusesToQueueBeforeHandshake) {
     diesel::platform::link::UsbCdcPort port("/dev/diesel_not_connected");
     diesel::platform::link::RoboLinkHostLink link(port);
-    EXPECT_FALSE(diesel_auto_aim::queue_gimbal_command(link, {0.0, 0.0, true}, ready_attitude(), 1));
+    EXPECT_FALSE(
+        diesel_auto_aim::queue_gimbal_command(link, {0.0, 0.0, true}, ready_attitude(), 1));
 }
 
 TEST(ControlFrameAdapter, AimToUsbBytesAfterHandshake) {
@@ -143,8 +144,8 @@ TEST(ControlFrameAdapter, AimToUsbBytesAfterHandshake) {
     std::array<std::uint8_t, 128> bytes{};
     const ssize_t hello_size = ::read(master, bytes.data(), bytes.size());
     ASSERT_GT(hello_size, 0);
-    const auto hello =
-        diesel::platform::link::decode_single_slot_frame({bytes.begin(), bytes.begin() + hello_size});
+    const auto hello = diesel::platform::link::decode_single_slot_frame(
+        {bytes.begin(), bytes.begin() + hello_size});
     ASSERT_TRUE(hello.has_value());
 
     diesel::platform::link::HelloAck ack;
@@ -162,7 +163,8 @@ TEST(ControlFrameAdapter, AimToUsbBytesAfterHandshake) {
     status_slot.type = 0x10;
     status_slot.payload.resize(28);
     status_slot.payload[22] = 3;
-    const auto status_frame = diesel::platform::link::encode_single_slot_frame(2, 2000, status_slot);
+    const auto status_frame =
+        diesel::platform::link::encode_single_slot_frame(2, 2000, status_slot);
     ASSERT_EQ(::write(master, status_frame.data(), status_frame.size()),
               static_cast<ssize_t>(status_frame.size()));
     ASSERT_EQ(link.step(2), diesel::platform::link::HostLinkState::Active);
@@ -172,8 +174,8 @@ TEST(ControlFrameAdapter, AimToUsbBytesAfterHandshake) {
     ASSERT_EQ(link.step(3), diesel::platform::link::HostLinkState::Active);
     const ssize_t sent_size = ::read(master, bytes.data(), bytes.size());
     ASSERT_EQ(sent_size, 72);
-    const auto control =
-        diesel::platform::link::decode_single_slot_frame({bytes.begin(), bytes.begin() + sent_size});
+    const auto control = diesel::platform::link::decode_single_slot_frame(
+        {bytes.begin(), bytes.begin() + sent_size});
     ASSERT_TRUE(control.has_value());
     EXPECT_EQ(control->type, 0x20u);
     EXPECT_NEAR(read_float_le(control->payload, 20),
