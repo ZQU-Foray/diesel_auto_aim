@@ -390,6 +390,7 @@ Source: 两次采集（周期方波 / PRBS 随机方波）互相关均未得到�
 最亮帧检查显示相机未正对屏幕，数据不可用于标定。
 
 Rejected: 直接把 +43.75 ms 写进默认值（会把屏幕延迟误当曝光延迟）。
+---
 
 ## Decision
 
@@ -416,3 +417,30 @@ Source: rebase 后本仓 11 个测试程序共 82 条全绿（本地 cmake + 直
 `control_frame_adapter` 改指 `diesel_platform_core` 的 `diesel::platform::link`。
 
 Rejected: 用 `#ifdef` 把视觉入口留在后端（依赖与构建仍然连坐）；把 `load_handeye` 留在库内（库层读文件、依赖 OpenCV）。
+
+---
+
+## Decision
+
+Date: 2026-11-14
+
+Context: 原 `diesel_vision` 已实现装甲板双模型检测 + PnP，而本仓 `detector.hpp` 只有空接口；
+两者职责重叠，且需要装载更多类别的目标识别。
+
+Decision: 前后端分家。检测识别（相机取流、多类别 detector、PnP 几何）归 L3 前端
+`diesel_vision_frontend`（原 `diesel_vision`，持有 OpenCV / ONNXRuntime）；本仓改名为
+`diesel_vision_backend`，承接多源融合（OwnCamera / AllyShared）+ 友军过滤 + 关联 / EKF 跟踪 +
+瞄准解算 + `WorldSnapshot` 生成，只链 Eigen。`Observation` / `WorldSnapshot` / `GimbalCommand`
+消息契约放 `diesel_interfaces`，消费方只依赖消息。
+
+Reason:
+- C4 依赖重量：后端只链 Eigen，跟踪环保持 1–10 ms 硬实时，不被模型推理抖动污染
+- C3 团队边界：前端（高频、重依赖）与后端（硬实时、轻依赖）可独立演进
+- 避免 L5/L4 反向依赖 L3 实现：契约放 X2，上层只依赖消息
+
+Rejected:
+- 让 backend 继续实现 detector（与前端重复，且 OpenCV/ONNX 进实时环）
+- 融合留在 L3 vision（决策/导航将反向依赖 L3 实现）
+
+Source: `foray_docs/repository_structure.md` §2、§6.6；`algorithm_structure.md` §1.4/§1.5；
+迁移计划 P0–P6（dev_task `vision-front-backend-split`）。
