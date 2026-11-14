@@ -390,3 +390,29 @@ Source: 两次采集（周期方波 / PRBS 随机方波）互相关均未得到�
 最亮帧检查显示相机未正对屏幕，数据不可用于标定。
 
 Rejected: 直接把 +43.75 ms 写进默认值（会把屏幕延迟误当曝光延迟）。
+
+## Decision
+
+Date: 2026-11-14
+
+Context: I2 —— 把 `feat/sp-tracker-auto-aim` 收敛到 dev 的 diesel 命名之上，并与「前端检测 / 后端融合跟踪」的分家边界对齐。
+
+Decision:
+
+- 后端只消费前端逐帧 `Observation`（`xyz_camera` / `normal_camera` / `armor_id` / `normal_valid` /
+  `reprojection_error`）；`AimPipeline::process_observations` 不再接收图像或检测器。I6 换成
+  `diesel_interfaces` 消息后字段语义不变。
+- 删除 `vision_adapter`（被 `observation` 取代）、`camera_diagnostic_adapter`（静止相机诊断属前端）与
+  `tools/`（相机调试、只读联调窗口归前端）；原 `foray_world_tracker_worker` 的 JSONL 入口待 I7 按新接口重建。
+- 去掉 OpenCV 依赖：`load_handeye` 的 `cv::FileStorage` 读取移出库层（标定文件由装配入口读，库只收
+  `HandEyeCalibration`）；板法向由前端给出，后端不再做 `cv::Rodrigues`。
+- `Target` 只保留 11 维 EKF 与 `update(xyz_measured, armor_id)` / `update(xyz, armor_id, yaw, var, noise_scale)`；
+  原 `Target::associate` 与 NIS 野值门限由 Tracker 关联层承担（`test/test_tracker.cpp` 已覆盖野值拒绝）。
+
+Reason: 检测/PnP 与跟踪在变更率、依赖重量、实时要求上都不同（OpenCV + ONNX Runtime 对比 Eigen-only 硬实时环）；
+同库会让后端被迫链接推理运行时，也让 CI 变重、构建环境要求变高。
+
+Source: rebase 后本仓 11 个测试程序共 82 条全绿（本地 cmake + 直接运行测试二进制），
+`control_frame_adapter` 改指 `diesel_platform_core` 的 `diesel::platform::link`。
+
+Rejected: 用 `#ifdef` 把视觉入口留在后端（依赖与构建仍然连坐）；把 `load_handeye` 留在库内（库层读文件、依赖 OpenCV）。
