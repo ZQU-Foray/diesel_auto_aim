@@ -25,7 +25,8 @@ TEST(SpAssociationTest, RejectsNonFiniteObservation) {
     const diesel_vision_backend::Target target({5.0, 0.0, 0.5}, 0.0, 0.2, p0, 4);
     const diesel_vision_backend::ArmorTrackObservation observation{
         {std::numeric_limits<double>::quiet_NaN(), 0.0, 0.5}, 0.0, 1};
-    EXPECT_FALSE(diesel_vision_backend::associate_sp_plate(target, observation, Eigen::Vector3d::Zero()));
+    EXPECT_FALSE(
+        diesel_vision_backend::associate_sp_plate(target, observation, Eigen::Vector3d::Zero()));
 }
 
 } // namespace

@@ -37,7 +37,7 @@ diesel::platform::link::GimbalAttitude ready_attitude() {
 
 TEST(ControlFrameAdapter, EncodesValidGimbalCommandWithoutFire) {
     const diesel_vision_backend::GimbalCommand command{3.14159265358979323846 / 2.0,
-                                                 -3.14159265358979323846 / 4.0, true};
+                                                       -3.14159265358979323846 / 4.0, true};
     const auto frame =
         diesel_vision_backend::make_gimbal_control_frame(command, ready_attitude(), 21, 3, 4, 1000);
     ASSERT_TRUE(frame.has_value());
@@ -58,8 +58,8 @@ TEST(ControlFrameAdapter, EncodesValidGimbalCommandWithoutFire) {
 }
 
 TEST(ControlFrameAdapter, RejectsUntrustedAndNonFiniteCommand) {
-    const auto invalid =
-        diesel_vision_backend::make_gimbal_control_frame({1.0, 2.0, false}, ready_attitude(), 1, 1, 1, 1);
+    const auto invalid = diesel_vision_backend::make_gimbal_control_frame(
+        {1.0, 2.0, false}, ready_attitude(), 1, 1, 1, 1);
     EXPECT_FALSE(invalid.has_value());
     const auto nonfinite = diesel_vision_backend::make_gimbal_control_frame(
         {std::numeric_limits<double>::quiet_NaN(), 0.0, true}, ready_attitude(), 1, 1, 1, 1);
@@ -94,8 +94,9 @@ TEST(ControlFrameAdapter, RotatesGimbalDirectionIntoWorldFrame) {
     EXPECT_NEAR(read_float_le(stationary_slot->payload, 20), 0.0f, 1e-5f);
 
     attitude.imu_state = 0; // IMU 仍在标定，世界系目标不能用。
-    EXPECT_FALSE(diesel_vision_backend::make_gimbal_control_frame({0.0, 0.0, true}, attitude, 3, 3, 3, 3)
-                     .has_value());
+    EXPECT_FALSE(
+        diesel_vision_backend::make_gimbal_control_frame({0.0, 0.0, true}, attitude, 3, 3, 3, 3)
+            .has_value());
 }
 
 TEST(ControlFrameAdapter, WorldPitchUsesDownPositiveConvention) {
