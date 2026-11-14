@@ -403,7 +403,7 @@ Decision:
   `reprojection_error`）；`AimPipeline::process_observations` 不再接收图像或检测器。I6 换成
   `diesel_interfaces` 消息后字段语义不变。
 - 删除 `vision_adapter`（被 `observation` 取代）、`camera_diagnostic_adapter`（静止相机诊断属前端）与
-  `tools/`（相机调试、只读联调窗口归前端）；原 `foray_world_tracker_worker` 的 JSONL 入口待 I7 按新接口重建。
+  `tools/`（相机调试、只读联调窗口归前端）；原 `world_tracker_worker` 的 JSONL 入口待 I7 按新接口重建。
 - 去掉 OpenCV 依赖：`load_handeye` 的 `cv::FileStorage` 读取移出库层（标定文件由装配入口读，库只收
   `HandEyeCalibration`）；板法向由前端给出，后端不再做 `cv::Rodrigues`。
 - `Target` 只保留 11 维 EKF 与 `update(xyz_measured, armor_id)` / `update(xyz, armor_id, yaw, var, noise_scale)`；

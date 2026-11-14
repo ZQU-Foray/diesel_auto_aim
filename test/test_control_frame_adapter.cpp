@@ -125,7 +125,7 @@ TEST(ControlFrameAdapter, AimResultCanEnterProtocolFrame) {
 }
 
 TEST(ControlFrameAdapter, RefusesToQueueBeforeHandshake) {
-    diesel::platform::link::UsbCdcPort port("/dev/foray_not_connected");
+    diesel::platform::link::UsbCdcPort port("/dev/diesel_not_connected");
     diesel::platform::link::RoboLinkHostLink link(port);
     EXPECT_FALSE(diesel_auto_aim::queue_gimbal_command(link, {0.0, 0.0, true}, ready_attitude(), 1));
 }
