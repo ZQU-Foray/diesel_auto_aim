@@ -156,6 +156,22 @@ jobs:
           rosdep update
           rosdep install -y -r --from-paths . --ignore-src --rosdistro humble
 
+      # 本仓只依赖 diesel_platform_core 一个上游 ROS 2 包；CI 单仓 checkout 拿不到它，
+      # 故从公开的 diesel_platform 仓按需构建该子包并装进 /usr/local，供 find_package 解析。
+      - name: 准备上游 diesel_platform_core
+        if: steps.detect.outputs.found == 'true'
+        shell: bash
+        run: |
+          source /opt/ros/humble/setup.bash
+          git clone --depth 1 https://github.com/ZQU-Foray/diesel_platform.git /tmp/diesel_platform
+          colcon build --base-paths /tmp/diesel_platform \
+            --packages-select diesel_platform_core \
+            --build-base /tmp/diesel_platform/build \
+            --install-base /tmp/diesel_platform/install \
+            --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF \
+                         -DCMAKE_INSTALL_PREFIX=/usr/local
+          ldconfig
+
       - name: 构建 (colcon build)
         if: steps.detect.outputs.found == 'true'
         shell: bash
