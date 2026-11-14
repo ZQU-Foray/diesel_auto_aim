@@ -51,7 +51,8 @@ colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 | 产出 | 内容 |
 |---|---|
 | 云台指令 | pitch/yaw（硬实时环，100–1000 Hz） |
-| 目标状态 | 供决策层使用的目标可信度 |
+| 目标状态 | `AimPipelineResult.snapshot`：`WorldSnapshotData`（0/1 条 `SnapshotTrack`，带世界系位置/速度与置信度） |
+| 融合计数 | `fused_count` / `fused_dropped` / `fused_merged`，供离线诊断「这帧为什么没目标」 |
 
 当前 `aim_at()` 输出的是云台系相对指向角。RoboLink v0.2 的控制快照要求世界系目标角，因此协议适配函数必须收到有效的云台系到世界系四元数，先旋转指向向量再解出世界系 yaw/pitch（rad）；无有效姿态时拒绝组帧。时间对齐尚未实现，真实控制仍禁用。握手或状态回读前也拒绝排队；排队不证明电控接受或执行。
 
@@ -68,6 +69,23 @@ colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 `TrackerResult.diagnostics` 仅供离线诊断，区分空输入、ID、朝向、距离和时间间隔等拒绝原因；不会放宽门限，也不代表目标可安全控制。模拟器同板对照已发现模型四角相对物理外角内缩，需先校正输入契约再标定实车门限。
 
 离线 v1 另提供 `aim_at_tracked_armor()`：用 Tracker 的整车状态、局部板号与显式预测时长计算未来板位置，再按下发时刻云台姿态转成直瞄角。它不做图像/IMU 对时、目标可见性判定、弹道或发射授权；当前仅供模拟器适配层使用，不能直接接真实电机。
+
+### 融合层（I7）
+
+`fuse_observations(observations, now_s, FusionConfig)` 在任何几何变换之前运行，规则按优先级固定：
+
+1. **时间**：`stamp_s` 非有限、晚于 `now`、或早于 `now - max_age_s`（默认 100 ms）→ 丢弃；
+2. **类别**：3v3 只实装装甲板，`armor_only` 时非 `TargetClass::Armor` 一律丢弃；
+3. **几何**：板号必须在 0..2、位置有限且 `z > 0`、`normal_valid` 时法向必须有限；
+4. **去重**：同板号且距离 < `same_armor_merge_m`（默认 0.15 m）判为同一块板，
+   **自车相机优先**，同来源取置信度高者；不平均位置——平均会把两车标定误差混进来。
+
+`build_world_snapshot(TrackerResult, stamp, max_missed_frames)` 把单目标跟踪结果转成快照轨迹：
+`Lost` 不产生轨迹（`valid=false`），`Detecting` 上限 0.5，`Tracking` 由丢帧数衰减，`TempLost` 固定 0.2。
+**预测帧永远不会伪装成已确认锁定**。
+
+> 当前 Tracker 是单目标跟踪器，因此快照至多 1 条轨迹；多目标快照要等每目标一条轨迹后才有意义，
+> 届时扩展 `build_world_snapshot` 的内部，消费方契约不变。
 
 **目标源可插拔**（本仓只消费融合后的目标）：
 
